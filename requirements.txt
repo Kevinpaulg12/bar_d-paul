@@ -1,0 +1,5 @@
+django
+psycopg2-binary  # Si usas Supabase o PostgreSQL local
+gunicorn         # Recomendado para producción (Cloud o Local)
+python-dotenv    # Para manejar las variables de entorno
+reportlab        # Para generación de PDFs

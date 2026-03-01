@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Sistema de Ventas{% endblock %}
+
+{% block content %}
+
+<div class="max-w-7xl mx-auto">
+    
+    <!-- Header del Dashboard -->
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-white mb-2">
+            <i class="fa-solid fa-chart-line text-brand-500 mr-3"></i>
+            Dashboard Administrativo
+        </h1>
+        <p class="text-gray-400">Resumen de operaciones y actividades</p>
+    </div>
+
+    <!-- Cards Principales -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        
+        <!-- Ventas Hoy -->
+        <div class="bg-dark-800 border border-dark-700 rounded-lg p-6 hover:border-brand-500/50 transition-colors">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-2">Ventas Hoy</p>
+                    <h3 class="text-3xl font-bold text-white">${{ ventas_hoy|floatformat:2 }}</h3>
+                </div>
+                <div class="bg-brand-500/10 p-4 rounded-full">
+                    <i class="fa-solid fa-chart-line text-brand-500 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ventas 7 Días -->
+        <div class="bg-dark-800 border border-dark-700 rounded-lg p-6 hover:border-blue-500/50 transition-colors">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-2">Últimos 7 Días</p>
+                    <h3 class="text-3xl font-bold text-white">${{ ventas_7dias|floatformat:2 }}</h3>
+                </div>
+                <div class="bg-blue-500/10 p-4 rounded-full">
+                    <i class="fa-solid fa-calendar-days text-blue-500 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Bajo -->
+        <div class="bg-dark-800 border border-dark-700 rounded-lg p-6 hover:border-red-500/50 transition-colors">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-2">Stock Bajo</p>
+                    <h3 class="text-3xl font-bold text-white">{{ stock_bajo }}</h3>
+                    <p class="text-xs text-gray-500 mt-1">de {{ total_productos }} productos</p>
+                </div>
+                <div class="bg-red-500/10 p-4 rounded-full">
+                    <i class="fa-solid fa-exclamation-triangle text-red-500 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Solicitudes Pendientes -->
+        <div class="bg-dark-800 border border-dark-700 rounded-lg p-6 hover:border-yellow-500/50 transition-colors">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-2">Bajas Pendientes</p>
+                    <h3 class="text-3xl font-bold text-white">{{ bajas_pendientes }}</h3>
+                    <p class="text-xs text-gray-500 mt-1">requieren aprobación</p>
+                </div>
+                <div class="bg-yellow-500/10 p-4 rounded-full">
+                    <i class="fa-solid fa-inbox text-yellow-500 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Gráficos -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        
+        <!-- Gráfico de Ventas Diarias -->
+        <div class="bg-dark-800 border border-dark-700 rounded-lg p-6">
+            <h3 class="text-xl font-bold text-white mb-4">
+                <i class="fa-solid fa-chart-bar text-brand-500 mr-2"></i>
+                Ventas Diarias (últimos 7 días)
+            </h3>
+            <canvas id="chart-ventas"></canvas>
+        </div>
+
+        <!-- Gráfico de Top Productos -->
+        <div class="bg-dark-800 border border-dark-700 rounded-lg p-6">
+            <h3 class="text-xl font-bold text-white mb-4">
+                <i class="fa-solid fa-star text-yellow-500 mr-2"></i>
+                Top 5 Productos
+            </h3>
+            <canvas id="chart-productos"></canvas>
+        </div>
+
+    </div>
+
+    <!-- Información Adicional -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Vendedores Activos -->
+        <div class="bg-dark-800 border border-dark-700 rounded-lg p-6">
+            <h3 class="text-lg font-bold text-white mb-4">
+                <i class="fa-solid fa-users text-blue-500 mr-2"></i>
+                Actividad de Vendedores
+            </h3>
+            <div class="space-y-3">
+                <div>
+                    <p class="text-gray-400 text-sm">Activos Hoy</p>
+                    <p class="text-2xl font-bold text-white">{{ vendedores_hoy }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-sm">Activos (7 días)</p>
+                    <p class="text-2xl font-bold text-white">{{ vendedores_activos }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen de Bajas -->
+        <div class="bg-dark-800 border border-dark-700 rounded-lg p-6">
+            <h3 class="text-lg font-bold text-white mb-4">
+                <i class="fa-solid fa-inbox text-orange-500 mr-2"></i>
+                Gestión de Bajas
+            </h3>
+            <div class="space-y-3">
+                <div>
+                    <p class="text-gray-400 text-sm">Hoy</p>
+                    <p class="text-2xl font-bold text-orange-500">{{ bajas_hoy }}</p>
+                </div>
+                <a href="{% url 'products:bajas_pendientes' %}" class="inline-block mt-2 px-3 py-1 bg-orange-500 text-white text-sm rounded hover:bg-orange-600 transition">
+                    Ver todas
+                </a>
+            </div>
+        </div>
+
+        <!-- Ventas Últimos 30 Días -->
+        <div class="bg-dark-800 border border-dark-700 rounded-lg p-6">
+            <h3 class="text-lg font-bold text-white mb-4">
+                <i class="fa-solid fa-chart-pie text-purple-500 mr-2"></i>
+                Últimos 30 Días
+            </h3>
+            <div class="space-y-3">
+                <div>
+                    <p class="text-gray-400 text-sm">Total en Ventas</p>
+                    <p class="text-2xl font-bold text-white">${{ ventas_30dias|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Script para gráficos -->
+<script>
+    // Datos para el gráfico de ventas
+    const ventasLabels = {{ labels_ventas|safe }};
+    const ventasData = {{ datos_ventas|safe }};
+
+    // Gráfico de Línea - Ventas Diarias
+    const ctxVentas = document.getElementById('chart-ventas').getContext('2d');
+    new Chart(ctxVentas, {
+        type: 'line',
+        data: {
+            labels: ventasLabels,
+            datasets: [{
+                label: 'Ventas ($)',
+                data: ventasData,
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: '#22c55e',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: { color: '#fff', font: { size: 12 } }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#999' },
+                    grid: { color: '#2a3f5f' }
+                },
+                x: {
+                    ticks: { color: '#999' },
+                    grid: { color: '#2a3f5f' }
+                }
+            }
+        }
+    });
+
+    // Datos para top productos
+    const productosLabels = {{ top_productos|safe }};
+    const productosData = [];
+
+    // Gráfico de Barras - Top Productos
+    const ctxProductos = document.getElementById('chart-productos').getContext('2d');
+    new Chart(ctxProductos, {
+        type: 'bar',
+        data: {
+            labels: [{% for producto in top_productos %}'{{ producto.nombre }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Cantidad Vendida',
+                data: [{% for producto in top_productos %}{{ producto.total_vendido }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: [
+                    '#22c55e',
+                    '#3b82f6',
+                    '#f59e0b',
+                    '#ef4444',
+                    '#8b5cf6'
+                ],
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: { color: '#999' },
+                    grid: { color: '#2a3f5f' }
+                },
+                y: {
+                    ticks: { color: '#999' },
+                    grid: { color: '#2a3f5f' }
+                }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

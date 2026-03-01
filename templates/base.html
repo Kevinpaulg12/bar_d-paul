@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Ventas - Bar-D'Paul{% endblock %}</title>
+    {% csrf_token %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                        },
+                        brand: {
+                            500: '#22c55e',
+                            600: '#16a34a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        /* Sidebar móvil */
+        @media (max-width: 768px) {
+            #sidebar {
+                position: fixed !important;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                width: 256px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+                z-index: 50;
+            }
+            
+            #sidebar.active {
+                transform: translateX(0);
+            }
+            
+            #sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 40;
+            }
+            
+            #sidebar-overlay.active {
+                display: block;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            #sidebar {
+                position: static !important;
+                transform: translateX(0) !important;
+                width: 256px;
+            }
+        }
+
+        .dropdown-menu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .dropdown-menu.active {
+            max-height: 300px;
+        }
+    </style>
+</head>
+<body class="bg-dark-900 text-gray-300 font-sans antialiased flex h-screen overflow-hidden">
+
+    <aside id="sidebar" class="w-64 bg-dark-900 flex flex-col justify-between">
+        <div>
+            <div class="h-20 flex items-center px-8">
+                <div class="bg-brand-500 text-white p-1 rounded mr-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <h1 class="text-xl font-bold text-white tracking-wider hidden sm:inline">Bar D'Paúl</h1>
+                <h1 class="text-xl font-bold text-white tracking-wider sm:hidden"> <span class="text-brand-500">Admin</span></h1>
+                <button onclick="toggleSidebar()" class="ml-auto md:hidden p-2 text-gray-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <nav class="mt-6 px-4 space-y-2">
+                <a href="{% if user.perfil.rol == 'admin' %}{% url 'dashboard:dashboard_admin' %}{% else %}{% url 'dashboard:dashboard_vendedor' %}{% endif %}" 
+                class="flex items-center px-4 py-3 bg-brand-500/10 text-brand-500 rounded-lg transition-colors">
+                    <i class="fa-solid fa-chart-line w-5 mr-3"></i>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                {% if user.perfil.rol == 'vendedor' %}
+                    <a href="{% url 'sales:listado' %}" class="flex items-center px-4 py-3 text-gray-400 hover:bg-dark-800 hover:text-white rounded-lg transition-colors">
+                        <i class="fa-solid fa-list w-5 mr-3"></i>
+                        <span class="font-medium">Ventas del Día</span>
+                    </a>
+                    <a href="{% url 'sales:nueva_venta' %}" class="flex items-center px-4 py-3 text-gray-400 hover:bg-dark-800 hover:text-white rounded-lg transition-colors">
+                        <i class="fa-solid fa-cash-register w-5 mr-3"></i>
+                        <span class="font-medium">Punto de Venta</span>
+                    </a>
+                    
+                    <a href="{% url 'sales:listado' %}" class="flex items-center px-4 py-3 text-gray-400 hover:bg-dark-800 hover:text-white rounded-lg transition-colors">
+                        <i class="fa-solid fa-boxes w-5 mr-3"></i>
+                        <span class="font-medium">Stock Actual</span>
+                    </a>
+                    <a href="{% url 'sales:mis_reportes' %}" class="flex items-center px-4 py-3 text-gray-400 hover:bg-dark-800 hover:text-white rounded-lg transition-colors">
+                        <i class="fa-solid fa-chart-simple w-5 mr-3"></i>
+                        <span class="font-medium">Generar gastos</span>
+                    </a>
+                    <a href="{% url 'sales:formulario_cierre' %}" class="flex items-center px-4 py-3 text-gray-400 hover:bg-dark-800 hover:text-white rounded-lg transition-colors">
+                        <i class="fa-solid fa-money-bill-wave w-5 mr-3"></i>
+                        <span class="font-medium">Cierre de Caja</span>
+                    </a>
+                {% elif user.perfil.rol == 'admin' %}
+                    
+                    <a href="/admin/users/perfil/" class="flex items-center px-4 py-3 text-gray-400 hover:bg-dark-800 hover:text-white rounded-lg transition-colors">
+                        <i class="fa-solid fa-users w-5 mr-3"></i>
+                        <span class="font-medium">Gestión de Usuarios</span>
+                    </a>
+                    <a href="/admin/products/producto/" class="flex items-center px-4 py-3 text-gray-400 hover:bg-dark-800 hover:text-white rounded-lg transition-colors">
+                        <i class="fa-solid fa-boxes w-5 mr-3"></i>
+                        <span class="font-medium">Gestion de Promociones</span>
+                    </a>
+                    <a href="/admin/products/stock/" class="flex items-center px-4 py-3 text-gray-400 hover:bg-dark-800 hover:text-white rounded-lg transition-colors">
+                        <i class="fa-solid fa-boxes w-5 mr-3"></i>
+                        <span class="font-medium">Entrada de Stock</span>
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
+
+        <div class="p-4 border-t border-dark-800">
+            <button onclick="toggleUserMenu()" class="w-full flex items-center gap-3 p-2 hover:bg-dark-800 rounded-lg transition-colors">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-500 to-blue-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+                    {{ user.username|slice:":1"|upper }}
+                </div>
+                <div class="hidden sm:block flex-1 text-left">
+                    <p class="text-sm font-bold text-white">{{ user.get_full_name|default:user.username }}</p>
+                    <p class="text-xs text-gray-500">{{ user.perfil.get_rol_display }}</p>
+                </div>
+                <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
+            </button>
+            <div id="user-dropdown" class="dropdown-menu bg-dark-900 rounded-lg mt-2 border border-dark-700 overflow-hidden">
+                <a href="#" class="block px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-dark-800 transition-colors">
+                    <i class="fa-solid fa-user mr-2"></i> Mi Perfil
+                </a>
+                <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-dark-800 transition-colors border-t border-dark-700">
+                    <i class="fa-solid fa-sign-out-alt mr-2"></i> Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        <header class="h-16 md:h-0 bg-dark-900 flex items-center px-4 md:px-6 overflow-hidden">
+            <button id="menu-btn" onclick="toggleSidebar()" class="md:hidden p-2 text-gray-400 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <div class="md:hidden flex-1 text-center">
+                <span class="text-white font-bold">Bar D'Paúl Admin</span>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6 lg:px-10 lg:pt-7 bg-dark-900">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </main>
+
+    <script src="{% static 'js/menu-activo.js' %}"></script>
+    <script>
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('user-dropdown');
+            if (dropdown) dropdown.classList.toggle('active');
+        }
+
+        function logout() {
+            window.location.href = '{% url "users:logout" %}';
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar) sidebar.classList.toggle('active');
+            if (overlay) overlay.classList.toggle('active');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar) sidebar.classList.remove('active');
+            if (overlay) overlay.classList.remove('active');
+        }
+
+        document.addEventListener('click', function(event) {
+            const userDropdown = document.getElementById('user-dropdown');
+            const userBtn = event.target.closest('button[onclick*="toggleUserMenu"]');
+            if (userDropdown && !userBtn && !event.target.closest('#user-dropdown')) {
+                userDropdown.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

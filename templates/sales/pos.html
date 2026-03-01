@@ -1,0 +1,459 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-6 px-4">
+    <!-- Modal Solicitud de Baja -->
+    <div id="modalBaja" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+    <div class="bg-dark-800 p-6 rounded-2xl border border-dark-700 w-96">
+        <h3 class="text-white font-bold mb-4">Solicitar Baja de Producto</h3>
+        <select id="baja_producto_id" class="w-full bg-dark-900 text-white p-2 rounded mb-3 border-dark-600">
+            {% for p in productos %}
+                <option value="{{ p.id }}">{{ p.nombre }}</option>
+            {% endfor %}
+        </select>
+        <input type="number" id="baja_cantidad" placeholder="Cantidad" class="w-full bg-dark-900 text-white p-2 rounded mb-3 border-dark-600">
+        <textarea id="baja_motivo" placeholder="Motivo (Ej: Botella rota, caducado)" class="w-full bg-dark-900 text-white p-2 rounded mb-4 border-dark-600 h-24"></textarea>
+
+        <div class="flex gap-2">
+            <button onclick="enviarSolicitudBaja()" class="flex-1 bg-brand-500 text-white py-2 rounded-xl font-bold">Enviar Solicitud</button>
+            <button onclick="cerrarModalBaja()" class="flex-1 bg-dark-700 text-white py-2 rounded-xl">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+    <!-- Modal Apertura de Caja (NUEVO) -->
+    <div id="modal-abrir-caja" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+        <div class="bg-dark-800 rounded-2xl border border-dark-700 p-8 w-96 shadow-2xl">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="bg-brand-500 p-3 rounded-xl">
+                    <i class="fa-solid fa-lock text-white text-xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white">Abrir Caja</h2>
+            </div>
+
+            <p class="text-gray-400 mb-6">Ingresa el monto inicial para comenzar tu turno.</p>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-300 mb-2">Monto Inicial ($)</label>
+                <input type="number"
+                       id="monto-inicial"
+                       placeholder="0.00"
+                       step="0.01"
+                       min="0"
+                       class="w-full bg-dark-900 border border-dark-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all">
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="enviarAbrirCaja()"
+                        class="flex-1 bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 rounded-lg transition-all transform hover:scale-105">
+                    <i class="fa-solid fa-unlock mr-2"></i>Abrir Caja
+                </button>
+                <button onclick="recargarPagina()"
+                        class="flex-1 bg-dark-700 hover:bg-dark-600 text-gray-300 font-bold py-3 rounded-lg transition-all">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-[1920px] mx-auto">
+        
+        <!-- Header con estadísticas rápidas -->
+        <div class="mb-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-black text-white mb-2 flex items-center gap-3">
+                    <div class="bg-brand-500 p-3 rounded-xl">
+                        <i class="fa-solid fa-cash-register text-2xl"></i>
+                    </div>
+                    Punto de Venta
+                </h1>
+                <p class="text-gray-400 ml-14">Sistema de gestión de ventas</p>
+            </div>
+            
+            <div class="flex gap-3">
+                <div class="bg-dark-800 border border-dark-700 rounded-xl px-4 py-3">
+                    <p class="text-xs text-gray-500 uppercase font-bold">Productos</p>
+                    <p class="text-2xl font-black text-white">{{ productos|length }}</p>
+                </div>
+                <div class="bg-dark-800 border border-dark-700 rounded-xl px-4 py-3">
+                    <p class="text-xs text-gray-500 uppercase font-bold">Categorías</p>
+                    <p class="text-2xl font-black text-brand-500">{{ categorias|length }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layout principal -->
+        <div class="flex flex-col lg:flex-row gap-6 h-[calc(100vh-200px)]">
+            
+            <!-- Panel izquierdo: Catálogo de productos -->
+            <div class="flex-1 flex flex-col min-w-0">
+                
+                <!-- Barra de búsqueda y filtros -->
+                <div class="bg-dark-800 p-5 rounded-2xl border border-dark-700 shadow-2xl mb-6">
+                    <div class="flex flex-col lg:flex-row gap-4">
+                        
+                        <!-- Búsqueda -->
+                        <div class="relative flex-1">
+                            <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i class="fa-solid fa-magnifying-glass text-gray-500"></i>
+                            </span>
+                            <input type="text" 
+                                   id="buscador" 
+                                   onkeyup="filtrarProductos()" 
+                                   class="block w-full pl-11 pr-4 py-3.5 border-2 border-dark-600 rounded-xl bg-dark-900 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all font-medium" 
+                                   placeholder="Buscar por nombre, código o categoría..."
+                                   autocomplete="off">
+                            <span class="absolute inset-y-0 right-0 pr-4 flex items-center">
+                                
+                            </span>
+                        </div>
+                        
+                        <!-- Filtros de categoría -->
+                        <div class="flex gap-2 overflow-x-auto pb-1 custom-scrollbar lg:max-w-md items-center">
+                            <!-- Botón de opciones de vista -->
+                            <div class="flex gap-1 bg-dark-900 rounded-xl p-1 border border-dark-600 whitespace-nowrap">
+                                <button onclick="ordenarPorDemanda()" 
+                                        id="btn-demanda"
+                                        class="view-btn active px-3 py-2 bg-brand-500 text-white rounded-lg text-xs font-bold transition-all">
+                                    <i class="fa-solid fa-fire mr-1"></i>
+                                    Demanda
+                                </button>
+                                <button onclick="ordenarPorCategoria()" 
+                                        id="btn-categoria"
+                                        class="view-btn px-3 py-2 bg-dark-800 text-gray-400 rounded-lg text-xs font-bold hover:bg-dark-700 transition-all">
+                                    <i class="fa-solid fa-layer-group mr-1"></i>
+                                    Categoría
+                                </button>
+                            </div>
+
+                            <!-- Separador -->
+                            <div class="w-px h-6 bg-dark-600"></div>
+
+                            <!-- Botones de categoría -->
+                            <button onclick="filtrarCategoria('todas')" 
+                                    class="cat-btn active px-5 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-sm font-bold transition-all whitespace-nowrap shadow-lg shadow-brand-500/30">
+                                <i class="fa-solid fa-layer-group mr-2"></i>
+                                Todas
+                            </button>
+                            {% for cat in categorias %}
+                            <button onclick="filtrarCategoria('{{ cat.nombre|slugify }}')" 
+                                    class="cat-btn px-5 py-3 bg-dark-900 text-gray-400 border border-dark-600 rounded-xl text-sm font-bold hover:bg-dark-700 hover:text-white hover:border-brand-500 transition-all whitespace-nowrap">
+                                {{ cat.nombre }}
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Contador de resultados -->
+                    <div class="mt-4 pt-4 border-t border-dark-700 flex items-center justify-between">
+                        <p class="text-sm text-gray-500">
+                            <span id="productos-count" class="font-bold text-white">{{ productos|length }}</span> productos disponibles
+                        </p>
+                        <button onclick="limpiarFiltros()" class="text-xs text-brand-500 hover:text-brand-400 font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-rotate-right"></i>
+                            Limpiar filtros
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Grid de productos -->
+                <div id="catalogo" 
+                     class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 overflow-y-auto pr-2 custom-scrollbar">
+                    {% for producto in productos %}
+                    <button onclick="agregarProducto({{ producto.id }}, '{{ producto.nombre|escapejs }}', {{ producto.precio_venta|stringformat:'f' }}, {{ producto.stock_actual }})" 
+                            data-id="{{ producto.id }}"
+                            data-nombre="{{ producto.nombre|lower }}" 
+                            data-codigo="{{ producto.code|lower }}"
+                            data-categoria="{{ producto.categoria.nombre|slugify }}"
+                            data-demanda="{{ producto.total_vendido }}"
+                            class="producto-card p-5 border-2 border-dark-700 bg-dark-800 rounded-2xl hover:border-brand-500 hover:bg-gradient-to-br hover:from-dark-800 hover:to-brand-900/20 transition-all duration-300 text-left group relative overflow-hidden">
+                        
+                        <!-- Badges: Categoría y Stock Bajo -->
+                        <div class="flex justify-between items-start mb-3 flex-wrap gap-2">
+                            <span class="text-[10px] uppercase tracking-wider text-brand-500 font-black px-2.5 py-1 bg-brand-500/10 rounded-full border border-brand-500/20">
+                                {{ producto.categoria.nombre }}
+                            </span>
+                            {% if producto.stock_actual <= producto.stock_minimo %}
+                            <span class="text-[10px] uppercase tracking-wider text-red-500 font-black px-2.5 py-1 bg-red-500/10 rounded-full border border-red-500/20">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                Bajo Stock
+                            </span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Nombre del producto -->
+                        <h3 class="font-bold text-white group-hover:text-brand-400 transition-colors mb-1 line-clamp-2 min-h-[2.5rem]">
+                            {{ producto.nombre }}
+                        </h3>
+                        
+                        <!-- Código -->
+                        <p class="text-xs text-gray-500 font-mono mb-3">
+                            <i class="fa-solid fa-barcode mr-1"></i>
+                            {{ producto.code }}
+                        </p>
+                        
+                        <!-- Precio y Stock -->
+                        <div class="flex justify-between items-end mt-4 pt-3 border-t border-dark-700">
+                            <div>
+                                <p class="text-xs text-gray-500 mb-0.5">Precio</p>
+                                <span class="text-2xl font-black text-white group-hover:text-brand-400 transition-colors">
+                                    ${{ producto.precio_venta }}
+                                </span>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-gray-500 mb-0.5">Stock</p>
+                                <span class="stock-display text-sm font-bold {% if producto.stock_actual <= producto.stock_minimo %}text-red-400{% else %}text-green-400{% endif %}">
+                                    {{ producto.stock_actual }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Indicador hover -->
+                        <div class="absolute inset-0 border-2 border-brand-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                    </button>
+                    {% empty %}
+                    <div class="col-span-full flex flex-col items-center justify-center py-20">
+                        <i class="fa-solid fa-box-open text-6xl text-gray-700 mb-4"></i>
+                        <p class="text-gray-500 font-bold text-lg">No hay productos disponibles</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Panel derecho: Ticket de venta -->
+           <div class="w-full md:w-96 bg-dark-800 rounded-2xl border border-dark-700 shadow-xl flex flex-col h-[calc(100vh-120px)] overflow-hidden">
+                
+                <div class="p-4 border-b border-dark-700">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-receipt text-brand-500"></i> Ticket de Venta
+                    </h2>
+                </div>
+
+                <div id="ticket-items" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar min-h-0">
+                    <p class="text-gray-500 italic text-sm text-center mt-10">No hay productos seleccionados...</p>
+                </div>
+
+                <div class="p-4 bg-dark-900/40 border-t border-dark-700 space-y-3">
+                    
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-gray-500">Cliente</label>
+                        <input type="text" id="cliente_nombre" value="Consumidor Final" 
+                            class="w-full bg-dark-900 border border-dark-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-brand-500 outline-none">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-gray-500">Método de Pago</label>
+                        <select id="metodo_pago" onchange="toggleTransferencia()" 
+                                class="w-full bg-dark-900 border border-dark-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-brand-500 outline-none">
+                            <option value="EFECTIVO">💵 Efectivo</option>
+                            <option value="TRANSFERENCIA">📱 Transferencia</option>
+                        </select>
+                    </div>
+
+                    <div id="campos_transferencia" class="space-y-2 p-2 bg-dark-800 rounded-lg border border-brand-500/20" style="display: none;">
+                        <input type="text" id="banco" placeholder="Banco" class="w-full bg-dark-900 border border-dark-700 text-white rounded-md px-2 py-1 text-xs">
+                        <input type="text" id="codigo_ref" placeholder="Referencia" class="w-full bg-dark-900 border border-dark-700 text-white rounded-md px-2 py-1 text-xs">
+                    </div>
+
+                    <div class="pt-2 border-t border-dark-700 mt-2">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-gray-400 text-sm font-bold">TOTAL:</span>
+                            <span id="ticket-total" class="text-2xl font-black text-brand-500">$0.00</span>
+                        </div>
+                        <button onclick="procesarPago()" 
+                                class="w-full bg-brand-500 hover:bg-brand-600 text-white font-black py-3 rounded-xl transition-all active:scale-95 shadow-lg shadow-brand-500/20">
+                            CONFIRMAR VENTA
+                        </button>
+                    </div>
+                    
+                    <!-- Sección de Pago (inicialmente oculta) -->
+                    <div id="payment-section" class="hidden pt-4 border-t border-dark-700 mt-4 space-y-4">
+                        <div class="space-y-2">
+                            <label for="efectivo" class="text-sm font-bold text-gray-400">Efectivo recibido:</label>
+                            <input type="number" id="efectivo" oninput="calcularCambio()"
+                                   class="w-full text-center text-2xl font-bold bg-dark-900 border-2 border-dark-600 rounded-lg py-3 text-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                                   placeholder="0.00">
+                        </div>
+            
+                        <div class="flex justify-between items-center bg-dark-900 p-4 rounded-lg">
+                            <span class="text-gray-400 font-bold">CAMBIO:</span>
+                            <span id="cambio" class="text-3xl font-black text-green-400">$0.00</span>
+                        </div>
+
+                        <div class="flex justify-end gap-4">
+                            <button onclick="togglePaymentSection()" class="px-6 py-3 bg-dark-700 text-white font-bold rounded-lg hover:bg-dark-600 transition">
+                                Cancelar
+                            </button>
+                            <button onclick="finalizarVenta()" class="px-6 py-3 bg-brand-500 text-white font-black rounded-lg hover:bg-brand-600 transition active:scale-95 shadow-lg shadow-brand-500/30">
+                                Finalizar Venta
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Fin Sección de Pago -->
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estilos personalizados -->
+<style>
+    /* ... (tus otros estilos) ... */
+
+    /* Animación para la sección de pago */
+    #payment-section.hidden {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.5s ease-out, opacity 0.3s ease-out;
+        opacity: 0;
+    }
+    #payment-section {
+        max-height: 500px; /* Suficiente para el contenido */
+        opacity: 1;
+        transition: max-height 0.5s ease-in, opacity 0.5s ease-in;
+    }
+    /* Scrollbar personalizado */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(30, 41, 59, 0.3);
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(59, 130, 246, 0.5);
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(59, 130, 246, 0.8);
+    }
+
+    /* Truncate text con múltiples líneas */
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Animación de entrada para productos */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .producto-card {
+        animation: fadeInUp 0.3s ease-out;
+    }
+    
+    /* Keyboard shortcut style */
+    kbd {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+    
+</style>
+
+<!-- JavaScript externo -->
+<script src="{% static 'js/sales.js' %}"></script>
+
+<!-- Scripts de Apertura de Caja (NUEVO) -->
+<script>
+    // Verificar caja activa al cargar POS
+    document.addEventListener('DOMContentLoaded', async () => {
+        await verificarCajaActiva();
+    });
+
+    async function verificarCajaActiva() {
+        try {
+            const response = await fetch('/sales/api/caja-activa/');
+            const data = await response.json();
+
+            if (!data.caja_activa) {
+                // Mostrar modal de apertura de caja
+                document.getElementById('modal-abrir-caja').classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Error verificando caja:', error);
+        }
+    }
+
+    async function enviarAbrirCaja() {
+        const montoInput = document.getElementById('monto-inicial');
+        const monto = parseFloat(montoInput.value);
+
+        if (!monto || monto < 0 || isNaN(monto)) {
+            alert('❌ Por favor ingresa un monto válido');
+            montoInput.focus();
+            return;
+        }
+
+        try {
+            const response = await fetch('/sales/api/abrir-caja/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ monto_inicial: monto })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                document.getElementById('modal-abrir-caja').classList.add('hidden');
+                alert(`✓ Caja abierta correctamente con monto inicial: $${monto.toFixed(2)}`);
+                // Recargar la página para actualizar estado
+                location.reload();
+            } else {
+                alert('❌ Error: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error abriendo caja:', error);
+            alert('Error al abrir caja: ' + error.message);
+        }
+    }
+
+    function recargarPagina() {
+        location.reload();
+    }
+
+    // Helper para extraer CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+
+<!-- Atajos de teclado adicionales -->
+<script>
+    // Atajo Ctrl+K para enfocar búsqueda
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            document.getElementById('buscador').focus();
+        }
+    });
+</script>
+{% endblock %}

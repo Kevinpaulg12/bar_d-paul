@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-6 px-4">
+    <div class="max-w-4xl mx-auto">
+        
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-black text-white mb-2 flex items-center gap-3">
+                <div class="bg-brand-500 p-3 rounded-xl">
+                    <i class="fa-solid fa-money-bill-wave text-2xl"></i>
+                </div>
+                Cierre de Caja
+            </h1>
+            <p class="text-gray-400 ml-16">Finaliza tu turno y reconcilia tu caja</p>
+        </div>
+
+        {% if error %}
+        <div class="bg-red-500/10 border border-red-500 text-red-400 p-4 rounded-xl mb-6">
+            <i class="fa-solid fa-circle-exclamation mr-2"></i>
+            {{ error }}
+        </div>
+        {% else %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Panel Left: Resumen -->
+            <div class="lg:col-span-1 space-y-4">
+                
+                <!-- Monto Inicial -->
+                <div class="bg-dark-800 border border-dark-700 rounded-2xl p-6 shadow-xl">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-2">Monto Inicial</p>
+                    <p class="text-3xl font-black text-white">${{ monto_inicial|floatformat:2 }}</p>
+                </div>
+
+                <!-- Total Ventas -->
+                <div class="bg-dark-800 border border-dark-700 rounded-2xl p-6 shadow-xl">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-2">Total Ventas (Efectivo)</p>
+                    <p class="text-3xl font-black text-brand-500">${{ total_ventas|floatformat:2 }}</p>
+                    <p class="text-xs text-gray-500 mt-2">{{ num_ventas }} transacciones</p>
+                </div>
+
+                <!-- Monto Teórico -->
+                <div class="bg-dark-800 border border-dark-700 rounded-2xl p-6 shadow-xl">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-2">Monto Teórico</p>
+                    <p class="text-3xl font-black text-white">${{ monto_teorico|floatformat:2 }}</p>
+                    <p class="text-xs text-gray-400 mt-2">Inicial + Ventas</p>
+                </div>
+
+                <!-- Total Transferencias -->
+                <div class="bg-dark-800 border border-dark-700 rounded-2xl p-6 shadow-xl">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-2">Total Transferencias</p>
+                    <p class="text-2xl font-black text-blue-400">${{ total_transferencias|floatformat:2 }}</p>
+                </div>
+
+            </div>
+
+            <!-- Panel Right: Formulario -->
+            <div class="lg:col-span-2">
+                <div class="bg-dark-800 border border-dark-700 rounded-2xl p-8 shadow-xl">
+                    
+                    <h2 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <i class="fa-solid fa-hand-holding-dollar text-brand-500"></i>
+                        Ingresa el Monto Físico
+                    </h2>
+
+                    <div class="space-y-6">
+                        
+                        <!-- Input monto físico -->
+                        <div>
+                            <label class="text-sm font-bold text-gray-400 block mb-3">
+                                Dinero Físico en Caja ($)
+                            </label>
+                            <input type="number" 
+                                   id="monto_fisico" 
+                                   step="0.01"
+                                   min="0"
+                                   class="w-full text-5xl font-black bg-dark-900 border-2 border-dark-600 rounded-2xl py-6 px-6 text-white text-center focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                                   placeholder="0.00"
+                                   autofocus>
+                        </div>
+
+                        <!-- Resumen de diferencia -->
+                        <div id="diferencia-container" class="hidden">
+                            <div class="bg-dark-900 rounded-2xl p-6 border-2 border-dark-600">
+                                <p class="text-xs text-gray-500 uppercase font-bold mb-3">Resultado:</p>
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <p class="text-gray-400 text-sm">Monto Teórico</p>
+                                        <p class="text-2xl font-bold text-white">${{ monto_teorico|floatformat:2 }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-400 text-sm">Monto Ingresado</p>
+                                        <p id="ingresado-display" class="text-2xl font-bold text-white">$0.00</p>
+                                    </div>
+                                </div>
+                                <div class="border-t border-dark-700 pt-4">
+                                    <p class="text-gray-400 text-sm mb-2">Diferencia</p>
+                                    <p id="diferencia-display" class="text-4xl font-black">$0.00</p>
+                                    <p id="diferencia-texto" class="text-xs text-gray-500 mt-2"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Observaciones -->
+                        <div>
+                            <label class="text-sm font-bold text-gray-400 block mb-3">
+                                Observaciones (Opcional)
+                            </label>
+                            <textarea id="observaciones"
+                                      class="w-full bg-dark-900 border border-dark-600 text-white rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand-500 outline-none"
+                                      rows="3"
+                                      placeholder="Notas sobre diferencias o incidencias..."></textarea>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="flex gap-4 pt-4">
+                            <a href="{% url 'sales:listado' %}" 
+                               class="flex-1 bg-dark-700 hover:bg-dark-600 text-white py-3 rounded-xl font-bold transition-all text-center">
+                                Cancelar
+                            </a>
+                            <button onclick="procesarCierre()" 
+                                    class="flex-1 bg-brand-500 hover:bg-brand-600 text-white font-black py-3 rounded-xl transition-all active:scale-95 shadow-lg shadow-brand-500/20">
+                                <i class="fa-solid fa-check mr-2"></i>
+                                Confirmar Cierre
+                            </button>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+</div>
+
+<script>
+    const montoTeorizado = {{ monto_teorico|safe }};
+
+    // Actualizar diferencia en tiempo real
+    document.getElementById('monto_fisico').addEventListener('input', function() {
+        const montoFisico = parseFloat(this.value) || 0;
+        const diferencia = montoTeorizado - montoFisico;
+        
+        document.getElementById('diferencia-container').classList.remove('hidden');
+        document.getElementById('ingresado-display').textContent = `$${montoFisico.toFixed(2)}`;
+        document.getElementById('diferencia-display').textContent = `$${Math.abs(diferencia).toFixed(2)}`;
+        
+        // Color y texto según diferencia
+        const display = document.getElementById('diferencia-display');
+        const texto = document.getElementById('diferencia-texto');
+        
+        if (Math.abs(diferencia) < 0.01) {
+            display.className = 'text-4xl font-black text-green-400';
+            texto.textContent = '✓ Caja balanceada perfectamente';
+        } else if (diferencia > 0) {
+            display.className = 'text-4xl font-black text-red-400';
+            texto.textContent = `⚠ Faltante de $${diferencia.toFixed(2)}`;
+        } else {
+            display.className = 'text-4xl font-black text-blue-400';
+            texto.textContent = `+ Sobrante de $${Math.abs(diferencia).toFixed(2)}`;
+        }
+    });
+
+    // Procesar cierre
+    async function procesarCierre() {
+        const montoFisico = parseFloat(document.getElementById('monto_fisico').value);
+        
+        if (!montoFisico) {
+            alert('Por favor ingresa el monto físico');
+            return;
+        }
+
+        try {
+            const response = await fetch('{% url "sales:procesar_cierre" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                body: JSON.stringify({
+                    monto_fisico: montoFisico
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Redirigir a visualización del cierre
+                window.location.href = `/ventas/cierre/${data.cierre_id}/`;
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al procesar el cierre');
+        }
+    }
+</script>
+
+{% endblock %}

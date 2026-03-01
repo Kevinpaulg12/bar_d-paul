@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-6 px-4">
+    <div class="max-w-5xl mx-auto">
+        
+        <!-- Header -->
+        <div class="mb-8 flex items-center justify-between">
+            <div>
+                <h1 class="text-4xl font-black text-white mb-2 flex items-center gap-3">
+                    <div class="bg-brand-500 p-3 rounded-xl">
+                        <i class="fa-solid fa-check-circle text-2xl"></i>
+                    </div>
+                    Cierre Completado
+                </h1>
+                <p class="text-gray-400 ml-16">Turno finalizado correctamente</p>
+            </div>
+            <button onclick="window.print()" class="bg-brand-500 hover:bg-brand-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-print"></i>
+                Imprimir
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- Resumen Financiero -->
+            <div class="lg:col-span-2 bg-dark-800 border border-dark-700 rounded-2xl p-8 shadow-xl">
+                
+                <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-bar text-brand-500"></i>
+                    Resumen Financiero
+                </h2>
+
+                <div class="space-y-4">
+                    
+                    <!-- Monto Inicial -->
+                    <div class="flex justify-between items-center pb-4 border-b border-dark-700">
+                        <div>
+                            <p class="text-gray-400 text-sm">Monto Inicial</p>
+                            <p class="text-white font-semibold">Efectivo en caja al inicio</p>
+                        </div>
+                        <p class="text-2xl font-black text-white">${{ cierre.monto_inicial|floatformat:2 }}</p>
+                    </div>
+
+                    <!-- Total Ventas Efectivo -->
+                    <div class="flex justify-between items-center pb-4 border-b border-dark-700">
+                        <div>
+                            <p class="text-gray-400 text-sm">Ventas (Efectivo)</p>
+                            <p class="text-white font-semibold">{{ ventas|length }} transacciones</p>
+                        </div>
+                        <p class="text-2xl font-black text-brand-500">+${{ cierre.total_ventas_esperado|floatformat:2 }}</p>
+                    </div>
+
+                    <!-- Monto Teórico -->
+                    <div class="flex justify-between items-center pb-4 border-b border-dark-700">
+                        <div>
+                            <p class="text-gray-400 text-sm">Monto Teórico</p>
+                            <p class="text-white font-semibold">Esperado en caja</p>
+                        </div>
+                        <p class="text-2xl font-black text-gray-300">${{ cierre.monto_teorico|floatformat:2 }}</p>
+                    </div>
+
+                    <!-- Monto Físico -->
+                    <div class="flex justify-between items-center pb-4 border-b border-dark-700">
+                        <div>
+                            <p class="text-gray-400 text-sm">Monto Físico Ingresado</p>
+                            <p class="text-white font-semibold">Contado en caja</p>
+                        </div>
+                        <p class="text-2xl font-black text-white">${{ cierre.monto_fisico_ingresado|floatformat:2 }}</p>
+                    </div>
+
+                    <!-- Diferencia -->
+                    <div class="flex justify-between items-center pt-4 bg-dark-900 px-6 py-4 rounded-xl border-2 {% if cierre.diferencia == 0 %}border-green-500{% elif cierre.diferencia > 0 %}border-red-500{% else %}border-blue-500{% endif %}">
+                        <div>
+                            <p class="text-gray-400 text-sm">Diferencia</p>
+                            <p class="text-white font-semibold">
+                                {% if cierre.diferencia == 0 %}
+                                    ✓ Caja Balanceada
+                                {% elif cierre.diferencia > 0 %}
+                                    ⚠ Faltante
+                                {% else %}
+                                    + Sobrante
+                                {% endif %}
+                            </p>
+                        </div>
+                        <p class="text-3xl font-black {% if cierre.diferencia == 0 %}text-green-400{% elif cierre.diferencia > 0 %}text-red-400{% else %}text-blue-400{% endif %}">
+                            ${{ cierre.diferencia|floatformat:2 }}
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Info Adicional -->
+            <div class="space-y-4">
+                
+                <!-- Transferencias -->
+                <div class="bg-dark-800 border border-dark-700 rounded-2xl p-6 shadow-xl">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-3">Total Transferencias</p>
+                    <p class="text-3xl font-black text-blue-400">${{ cierre.total_transferencias|floatformat:2 }}</p>
+                </div>
+
+                <!-- Productos Vendidos -->
+                <div class="bg-dark-800 border border-dark-700 rounded-2xl p-6 shadow-xl">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-3">Productos Vendidos</p>
+                    <p class="text-3xl font-black text-brand-500">{{ cierre.total_productos_vendidos }}</p>
+                    <p class="text-xs text-gray-500 mt-2">unidades</p>
+                </div>
+
+                <!-- Fecha y Hora -->
+                <div class="bg-dark-800 border border-dark-700 rounded-2xl p-6 shadow-xl">
+                    <p class="text-xs text-gray-500 uppercase font-bold mb-3">Cierre Registrado</p>
+                    <p class="text-sm text-white font-semibold">{{ cierre.fecha_cierre|date:"d/m/Y" }}</p>
+                    <p class="text-sm text-gray-400">{{ cierre.fecha_cierre|time:"H:i:s" }}</p>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Detalle de Productos Vendidos -->
+        <div class="bg-dark-800 border border-dark-700 rounded-2xl p-8 shadow-xl mb-6">
+            
+            <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-box text-brand-500"></i>
+                Productos Vendidos
+            </h2>
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-dark-700">
+                            <th class="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Código</th>
+                            <th class="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Producto</th>
+                            <th class="text-center px-4 py-3 text-xs font-bold text-gray-500 uppercase">Cantidad</th>
+                            <th class="text-right px-4 py-3 text-xs font-bold text-gray-500 uppercase">Precio Unit.</th>
+                            <th class="text-right px-4 py-3 text-xs font-bold text-gray-500 uppercase">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for producto in productos_vendidos %}
+                        <tr class="border-b border-dark-700 hover:bg-dark-900 transition-colors">
+                            <td class="px-4 py-3 text-sm text-gray-400 font-mono">{{ producto.nombre }}</td>
+                            <td class="px-4 py-3 text-sm text-white">{{ producto.nombre }}</td>
+                            <td class="px-4 py-3 text-sm text-white text-center font-bold">{{ producto.cantidad }}</td>
+                            <td class="px-4 py-3 text-sm text-right text-brand-500 font-bold">${{ producto.precio_unitario|floatformat:2 }}</td>
+                            <td class="px-4 py-3 text-sm text-right text-white font-bold">${{ producto.cantidad|add:0|mul:producto.precio_unitario|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <!-- Detalle de Ventas -->
+        <div class="bg-dark-800 border border-dark-700 rounded-2xl p-8 shadow-xl">
+            
+            <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-receipt text-brand-500"></i>
+                Detalle de Ventas ({{ ventas|length }})
+            </h2>
+
+            <div class="space-y-4">
+                {% for venta in ventas %}
+                <div class="bg-dark-900 rounded-xl p-4 border border-dark-700">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <p class="text-sm font-bold text-white">Venta #{{ venta.id }}</p>
+                            <p class="text-xs text-gray-400">{{ venta.hora|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-2xl font-black text-brand-500">${{ venta.total|floatformat:2 }}</p>
+                            <p class="text-xs text-gray-400">{{ venta.metodo_pago }}</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-400">Cliente: {{ venta.cliente }}</p>
+                    <div class="mt-3 pt-3 border-t border-dark-700 text-xs text-gray-500">
+                        {% for detalle in venta.detalles.all %}
+                            <div class="flex justify-between">
+                                <span>{{ detalle.cantidad }}x {{ detalle.producto.nombre }}</span>
+                                <span>${{ detalle.cantidad|floatformat:2 }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+
+        <!-- Acciones -->
+        <div class="flex gap-4 mt-8 justify-center">
+            <a href="{% url 'sales:listado' %}" class="bg-dark-700 hover:bg-dark-600 text-white px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i>
+                Volver al Listado
+            </a>
+            <a href="{% url 'sales:descargar_pdf_cierre' cierre.id %}" class="bg-brand-500 hover:bg-brand-600 text-white px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2">
+                <i class="fa-solid fa-download"></i>
+                Descargar PDF
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
