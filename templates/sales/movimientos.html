@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block header %}
+<div class="flex items-center justify-between gap-3 pt-4">
+  <div class="flex items-center gap-3">
+    <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+      <i class="fa-solid fa-clipboard-list text-purple-500 text-lg"></i>
+    </div>
+    <div>
+      <p class="text-[11px] uppercase tracking-wider text-gray-500 font-bold">Auditoría</p>
+      <h2 class="text-white font-display font-bold text-xl">Movimientos del Sistema</h2>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="p-4 lg:p-6 space-y-6">
+  <!-- Stats -->
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div class="bg-dark-800 rounded-xl p-4 border border-dark-700">
+      <p class="text-[10px] uppercase text-gray-500 font-bold">Total Movimientos</p>
+      <p class="text-2xl font-black text-white">{{ stats.total_movimientos }}</p>
+    </div>
+    <div class="bg-dark-800 rounded-xl p-4 border border-dark-700">
+      <p class="text-[10px] uppercase text-gray-500 font-bold">Ventas</p>
+      <p class="text-2xl font-black text-brand-500">{{ stats.ventas }}</p>
+    </div>
+    <div class="bg-dark-800 rounded-xl p-4 border border-dark-700">
+      <p class="text-[10px] uppercase text-gray-500 font-bold">Cajas</p>
+      <p class="text-2xl font-black text-blue-500">{{ stats.cajas }}</p>
+    </div>
+    <div class="bg-dark-800 rounded-xl p-4 border border-dark-700">
+      <p class="text-[10px] uppercase text-gray-500 font-bold">Gastos</p>
+      <p class="text-2xl font-black text-red-500">{{ stats.gastos }}</p>
+    </div>
+    <div class="bg-dark-800 rounded-xl p-4 border border-dark-700">
+      <p class="text-[10px] uppercase text-gray-500 font-bold">Créditos</p>
+      <p class="text-2xl font-black text-yellow-500">{{ stats.creditos }}</p>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="bg-dark-800 rounded-xl p-4 border border-dark-700">
+    <form method="get" class="flex flex-wrap gap-3 items-end">
+      <div class="flex-1 min-w-[150px]">
+        <label class="block text-xs text-gray-500 font-bold mb-1">Desde</label>
+        <input type="date" name="fecha_desde" value="{{ filtros.fecha_desde }}"
+               class="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-white text-sm">
+      </div>
+      <div class="flex-1 min-w-[150px]">
+        <label class="block text-xs text-gray-500 font-bold mb-1">Hasta</label>
+        <input type="date" name="fecha_hasta" value="{{ filtros.fecha_hasta }}"
+               class="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-white text-sm">
+      </div>
+      <div class="flex-1 min-w-[120px]">
+        <label class="block text-xs text-gray-500 font-bold mb-1">Tipo</label>
+        <select name="tipo" class="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-white text-sm">
+          <option value="">Todos</option>
+          <option value="VENTA" {% if filtros.tipo == 'VENTA' %}selected{% endif %}>Venta</option>
+          <option value="VENTA_DETALLE" {% if filtros.tipo == 'VENTA_DETALLE' %}selected{% endif %}>Detalle Venta</option>
+          <option value="CAJA_APERTURA" {% if filtros.tipo == 'CAJA_APERTURA' %}selected{% endif %}>Apertura Caja</option>
+          <option value="CAJA_CIERRE" {% if filtros.tipo == 'CAJA_CIERRE' %}selected{% endif %}>Cierre Caja</option>
+          <option value="GASTO" {% if filtros.tipo == 'GASTO' %}selected{% endif %}>Gasto</option>
+          <option value="CREDITO" {% if filtros.tipo == 'CREDITO' %}selected{% endif %}>Crédito</option>
+          <option value="PAGO_CREDITO" {% if filtros.tipo == 'PAGO_CREDITO' %}selected{% endif %}>Pago Crédito</option>
+        </select>
+      </div>
+      <div class="flex-1 min-w-[120px]">
+        <label class="block text-xs text-gray-500 font-bold mb-1">Acción</label>
+        <select name="accion" class="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-white text-sm">
+          <option value="">Todas</option>
+          <option value="CREAR" {% if filtros.accion == 'CREAR' %}selected{% endif %}>Crear</option>
+          <option value="MODIFICAR" {% if filtros.accion == 'MODIFICAR' %}selected{% endif %}>Modificar</option>
+          <option value="ELIMINAR" {% if filtros.accion == 'ELIMINAR' %}selected{% endif %}>Eliminar</option>
+          <option value="APERTURAR" {% if filtros.accion == 'APERTURAR' %}selected{% endif %}>Aperturar</option>
+          <option value="CERRAR" {% if filtros.accion == 'CERRAR' %}selected{% endif %}>Cerrar</option>
+          <option value="REGISTRAR" {% if filtros.accion == 'REGISTRAR' %}selected{% endif %}>Registrar</option>
+          <option value="PAGAR" {% if filtros.accion == 'PAGAR' %}selected{% endif %}>Pagar</option>
+        </select>
+      </div>
+      <div class="flex-1 min-w-[120px]">
+        <label class="block text-xs text-gray-500 font-bold mb-1">Usuario</label>
+        <select name="usuario" class="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-white text-sm">
+          <option value="">Todos</option>
+          {% for u in usuarios %}
+          <option value="{{ u.id }}" {% if filtros.usuario_id == u.id|stringformat:"s" %}selected{% endif %}>{{ u.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="flex-1 min-w-[150px]">
+        <label class="block text-xs text-gray-500 font-bold mb-1">Buscar</label>
+        <input type="text" name="q" value="{{ filtros.busqueda|default:'' }}" placeholder="Buscar en descripción..."
+               class="w-full bg-dark-900 border border-dark-600 rounded-lg px-3 py-2 text-white text-sm">
+      </div>
+      <button type="submit" class="bg-brand-500 hover:bg-brand-600 text-white font-bold py-2 px-4 rounded-lg transition">
+        <i class="fa-solid fa-filter mr-1"></i> Filtrar
+      </button>
+      <a href="{% url 'sales:movimientos_auditoria' %}" class="bg-dark-700 hover:bg-dark-600 text-gray-300 font-bold py-2 px-4 rounded-lg transition">
+        <i class="fa-solid fa-rotate-right"></i>
+      </a>
+    </form>
+  </div>
+
+  <!-- Tabla de Movimientos -->
+  <div class="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-dark-900">
+          <tr>
+            <th class="text-left text-[10px] uppercase font-bold text-gray-500 px-4 py-3">Fecha/Hora</th>
+            <th class="text-left text-[10px] uppercase font-bold text-gray-500 px-4 py-3">Tipo</th>
+            <th class="text-left text-[10px] uppercase font-bold text-gray-500 px-4 py-3">Acción</th>
+            <th class="text-left text-[10px] uppercase font-bold text-gray-500 px-4 py-3">Descripción</th>
+            <th class="text-left text-[10px] uppercase font-bold text-gray-500 px-4 py-3">Usuario</th>
+            <th class="text-left text-[10px] uppercase font-bold text-gray-500 px-4 py-3">IP</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-dark-700">
+          {% for m in movimientos %}
+          <tr class="hover:bg-dark-700/50">
+            <td class="px-4 py-3 text-sm text-white">{{ m.fecha|date:"d/m/Y H:i:s" }}</td>
+            <td class="px-4 py-3">
+              {% if m.tipo == 'VENTA' %}
+              <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-brand-500/20 text-brand-500">VENTA</span>
+              {% elif m.tipo == 'CAJA_APERTURA' %}
+              <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-500">APERTURA</span>
+              {% elif m.tipo == 'CAJA_CIERRE' %}
+              <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-500">CIERRE</span>
+              {% elif m.tipo == 'GASTO' %}
+              <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-red-500/20 text-red-500">GASTO</span>
+              {% elif m.tipo == 'CREDITO' %}
+              <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-yellow-500/20 text-yellow-500">CRÉDITO</span>
+              {% elif m.tipo == 'PAGO_CREDITO' %}
+              <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-green-500/20 text-green-500">PAGO</span>
+              {% else %}
+              <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-gray-500/20 text-gray-500">{{ m.tipo }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              {% if m.accion == 'CREAR' %}
+              <span class="text-green-500 text-sm font-bold">{{ m.accion }}</span>
+              {% elif m.accion == 'MODIFICAR' %}
+              <span class="text-blue-500 text-sm font-bold">{{ m.accion }}</span>
+              {% elif m.accion == 'ELIMINAR' %}
+              <span class="text-red-500 text-sm font-bold">{{ m.accion }}</span>
+              {% else %}
+              <span class="text-gray-400 text-sm">{{ m.accion }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-sm text-gray-300 max-w-xs truncate" title="{{ m.descripcion }}">{{ m.descripcion }}</td>
+            <td class="px-4 py-3 text-sm text-white">{{ m.usuario.username|default:"-" }}</td>
+            <td class="px-4 py-3 text-sm text-gray-500">{{ m.ip_address|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="px-4 py-8 text-center text-gray-500">No hay movimientos registrados</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  {% if movimientos.has_other_pages %}
+  <div class="flex justify-center gap-2">
+    {% if movimientos.has_previous %}
+    <a href="?page={{ movimientos.previous_page_number }}{% if filtros.fecha_desde %}&fecha_desde={{ filtros.fecha_desde }}{% endif %}{% if filtros.fecha_hasta %}&fecha_hasta={{ filtros.fecha_hasta }}{% endif %}{% if filtros.tipo %}&tipo={{ filtros.tipo }}{% endif %}{% if filtros.accion %}&accion={{ filtros.accion }}{% endif %}"
+       class="px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white hover:bg-dark-700">
+      <i class="fa-solid fa-chevron-left"></i>
+    </a>
+    {% endif %}
+    
+    <span class="px-4 py-2 text-gray-400">
+      Página {{ movimientos.number }} de {{ movimientos.paginator.num_pages }}
+    </span>
+    
+    {% if movimientos.has_next %}
+    <a href="?page={{ movimientos.next_page_number }}{% if filtros.fecha_desde %}&fecha_desde={{ filtros.fecha_desde }}{% endif %}{% if filtros.fecha_hasta %}&fecha_hasta={{ filtros.fecha_hasta }}{% endif %}{% if filtros.tipo %}&tipo={{ filtros.tipo }}{% endif %}{% if filtros.accion %}&accion={{ filtros.accion }}{% endif %}"
+       class="px-4 py-2 bg-dark-800 border border-dark-600 rounded-lg text-white hover:bg-dark-700">
+      <i class="fa-solid fa-chevron-right"></i>
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

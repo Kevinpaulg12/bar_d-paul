@@ -10,6 +10,16 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 
 
+def _is_api_request(request):
+    """Determina si la solicitud es una API (espera respuesta JSON)."""
+    return (
+        request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
+        request.headers.get('Content-Type') == 'application/json' or
+        request.path.startswith('/api/') or
+        request.path.startswith('/sales/api/')
+    )
+
+
 def rol_requerido(*roles_permitidos):
     """
     Decorador que requiere que el usuario tenga uno de los roles especificados.
@@ -32,18 +42,19 @@ def rol_requerido(*roles_permitidos):
         @login_required
         def wrapper(request, *args, **kwargs):
             # Obtener perfil del usuario
-            if not hasattr(request.user, 'perfil') or not request.user.perfil:
-                # Crear perfil si no existe
-                from .models import Perfil
+            perfil = getattr(request.user, 'perfil', None)
+            if not perfil:
+                from apps.users.models import Perfil
                 perfil, _ = Perfil.objects.get_or_create(usuario=request.user)
             
-            rol_usuario = request.user.perfil.rol
+            rol_usuario = getattr(perfil, 'rol', None)
             
             # Verificar si el usuario tiene uno de los roles permitidos
             if rol_usuario not in roles_permitidos:
                 # Si es una API, devolver JSON
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                if _is_api_request(request):
                     return JsonResponse({
+                        'success': False,
                         'error': f'Acceso denegado. Se requiere rol: {", ".join(roles_permitidos)}',
                         'code': 'PERMISSION_DENIED'
                     }, status=403)

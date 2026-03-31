@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Gastos{% endblock %}
+
+{% block header %}
+<div class="flex items-center justify-between gap-3 pt-4 pb-1 overflow-visible">
+  <div class="flex items-center gap-3 min-w-0">
+    <div class="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex-shrink-0 flex items-center justify-center text-rose-500 shadow-sm shadow-rose-500/5">
+      <i class="fa-solid fa-file-invoice-dollar"></i>
+    </div>
+    
+    <div class="min-w-0 text-left">
+      <p class="text-[11px] uppercase tracking-wider text-gray-500 font-bold leading-none mb-1.5">Egresos</p>
+      
+      <h2 class="text-white font-display font-extrabold truncate text-lg leading-normal pb-0.5">
+        Gestión de Gastos
+      </h2>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <span class="hidden md:inline-flex items-center gap-2 text-[10px] font-bold text-gray-500 bg-dark-800/40 border border-dark-700 rounded-lg px-3 py-2">
+      <i class="fa-solid fa-receipt text-rose-500/70"></i>
+      CONTROL DE CAJA
+    </span>
+
+    <button id="btn-abrir-modal-gasto" 
+            class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold hover:scale-[1.02] transition-all focus-ring shadow-lg shadow-rose-500/20">
+      <i class="fa-solid fa-plus text-xs"></i>
+      <span class="hidden sm:inline text-[11px] uppercase tracking-wide">Nuevo Gasto</span>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if error %}
+<div class="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg mb-6">
+    <i class="fa-solid fa-exclamation-triangle mr-2"></i>
+    {{ error }}
+</div>
+{% endif %}
+
+{% if not error %}
+<div class="space-y-6">
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Total Gastos</p>
+                    <p class="text-2xl font-bold text-red-400">${{ total_gastos|floatformat:2 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
+                    <i class="fa-solid fa-file-invoice-dollar text-red-500 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Cantidad</p>
+                    <p class="text-2xl font-bold text-white">{{ gastos.count }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
+                    <i class="fa-solid fa-list text-blue-500 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Caja</p>
+                    <p class="text-2xl font-bold text-white">#{{ caja.id }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center">
+                    <i class="fa-solid fa-cash-register text-purple-500 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gastos Table -->
+    <div class="bg-dark-800 rounded-xl border border-dark-700 overflow-x-auto">
+        <table class="w-full min-w-[700px]">
+            <thead class="bg-dark-900">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">ID</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Categoría</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Descripción</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Monto</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Hora</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Registrado por</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-dark-700">
+                {% for gasto in gastos %}
+                <tr class="hover:bg-dark-700/50 transition-colors">
+                    <td class="px-6 py-4 text-gray-400">#{{ gasto.id }}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
+                            {{ gasto.get_categoria_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-white">{{ gasto.descripcion|default:"-" }}</td>
+                    <td class="px-6 py-4 text-red-400 font-bold">${{ gasto.monto }}</td>
+                    <td class="px-6 py-4 text-gray-400">{{ gasto.fecha|date:"H:i" }}</td>
+                    <td class="px-6 py-4 text-gray-300">{{ gasto.usuario.username }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                        <i class="fa-solid fa-file-invoice-dollar text-4xl mb-3"></i>
+                        <p>No hay gastos registrados</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if gastos %}
+            <tfoot class="bg-dark-900">
+                <tr>
+                    <td colspan="3" class="px-6 py-4 text-right font-bold text-white">TOTAL:</td>
+                    <td class="px-6 py-4 font-bold text-red-400">${{ total_gastos|floatformat:2 }}</td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Gasto -->
+<div id="gasto-modal" class="hidden fixed inset-0 bg-black/80 z-[60] flex items-center justify-center">
+    <div class="absolute inset-0" onclick="cerrarModalGasto()"></div>
+    <div class="relative bg-dark-800 rounded-2xl border border-dark-700 p-8 w-full max-w-md mx-4 shadow-2xl">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+                <div class="bg-rose-500/20 p-3 rounded-xl">
+                    <i class="fa-solid fa-file-invoice-dollar text-rose-500 text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-black text-white">Registrar Gasto</h3>
+                    <p class="text-xs text-gray-500">Control de caja</p>
+                </div>
+            </div>
+            <button onclick="cerrarModalGasto()" class="w-10 h-10 rounded-lg bg-dark-700 hover:bg-dark-600 flex items-center justify-center text-gray-400 hover:text-white transition">
+                <i class="fa-solid fa-times text-lg"></i>
+            </button>
+        </div>
+        
+        <form id="gasto-form" class="space-y-4">
+            <div>
+                <label class="block text-sm font-bold text-gray-300 mb-2">Categoría</label>
+                <select id="gasto-categoria" required
+                        class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-rose-500 outline-none">
+                    <option value="">Seleccionar categoría</option>
+                    <option value="INSUMOS">Insumos</option>
+                    <option value="SERVICIOS">Servicios</option>
+                    <option value="MANTENIMIENTO">Mantenimiento</option>
+                    <option value="NOMINA">Nómina</option>
+                    <option value="ALQUILER">Alquiler</option>
+                    <option value="SERVICIOS_PUBLICOS">Servicios Públicos</option>
+                    <option value="MARKETING">Marketing</option>
+                    <option value="OTROS">Otros</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-bold text-gray-300 mb-2">Monto</label>
+                <input type="number" id="gasto-monto" step="0.01" required
+                       class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-3 text-white text-xl font-bold text-center focus:ring-2 focus:ring-rose-500 outline-none"
+                       placeholder="0.00">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-bold text-gray-300 mb-2">Descripción (opcional)</label>
+                <textarea id="gasto-descripcion" rows="2"
+                          class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-rose-500 outline-none resize-none"
+                          placeholder="Detalles del gasto"></textarea>
+            </div>
+            
+            <div class="flex gap-3 pt-2">
+                <button type="button" onclick="cerrarModalGasto()" 
+                        class="flex-1 bg-dark-700 hover:bg-dark-600 text-white py-3.5 rounded-xl font-bold transition-all">
+                    Cancelar
+                </button>
+                <button type="submit" 
+                        class="flex-1 bg-rose-600 hover:bg-rose-500 text-white py-3.5 rounded-xl font-black transition-all">
+                    <i class="fa-solid fa-check mr-2"></i>Registrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('btn-abrir-modal-gasto').addEventListener('click', function() {
+    document.getElementById('gasto-modal').classList.remove('hidden');
+    document.getElementById('gasto-categoria').focus();
+});
+
+function cerrarModalGasto() {
+    document.getElementById('gasto-modal').classList.add('hidden');
+    document.getElementById('gasto-form').reset();
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        cerrarModalGasto();
+    }
+});
+
+document.getElementById('gasto-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const categoria = document.getElementById('gasto-categoria').value;
+    const monto = document.getElementById('gasto-monto').value;
+    const descripcion = document.getElementById('gasto-descripcion').value;
+    
+    if (!categoria || !monto) {
+        showToast('Por favor completa todos los campos requeridos', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await fetch('{% url "sales:registrar_gasto" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                categoria: categoria,
+                monto: monto,
+                descripcion: descripcion
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('Gasto registrado correctamente', 'success');
+            cerrarModalGasto();
+            location.reload();
+        } else {
+            showToast(data.error || 'Error al registrar gasto', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error de conexión con el servidor', 'error');
+    }
+});
+</script>
+{% endblock %}

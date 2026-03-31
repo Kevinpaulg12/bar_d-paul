@@ -1,6 +1,6 @@
 from pathlib import Path
 import os
-
+import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -9,14 +9,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-7b)1)muek+03@kj_atf9$vbh27p86qak$7%0$x*)$=+c4irx7g'
-
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-7b)1)muek+03@kj_atf9$vbh27p86qak$7%0$x*)$=+c4irx7g')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
-
-
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 # Application definition
 
 INSTALLED_APPS = [
@@ -27,13 +24,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'apps.sales',
-    'apps.products',
+    'apps.products.apps.ProductsConfig',
     'apps.users',
     'apps.dashboard',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # <-- AGREGA ESTA LÍNEA AQUÍ
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -65,10 +63,10 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default='sqlite:///db.sqlite3', # Fallback a sqlite si no hay variable
+        conn_max_age=600
+    )
 }
 
 
@@ -93,13 +91,13 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
-LANGUAGE_CODE = 'es-ec'
 
+USE_TZ = True
 TIME_ZONE = 'America/Guayaquil'
 
 USE_I18N = True
+LANGUAGE_CODE = 'es-ec'
 
-USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
@@ -114,5 +112,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = 'users:login'
 # Redirigir al dashboard que decide según el rol del usuario
-LOGIN_REDIRECT_URL = '/'  # Volver a la raíz tras login
+LOGIN_REDIRECT_URL = 'dashboard:panel'
 LOGOUT_REDIRECT_URL = 'users:login'

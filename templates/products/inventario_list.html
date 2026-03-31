@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inventario{% endblock %}
+
+{% block header %}
+<div class="flex items-center justify-between gap-3 pt-4 pb-1 overflow-visible">
+  <div class="flex items-center gap-3 min-w-0">
+    <div class="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 flex-shrink-0 flex items-center justify-center text-brand-500 shadow-sm shadow-brand-500/5">
+      <i class="fa-solid fa-boxes-stacked"></i>
+    </div>
+    
+    <div class="min-w-0 text-left">
+      <p class="text-[11px] uppercase tracking-wider text-gray-500 font-bold leading-none mb-1.5">Almacén</p>
+      
+      <h2 class="text-white font-display font-extrabold truncate text-lg leading-normal pb-0.5">
+        Inventario Global
+      </h2>
+    </div>
+  </div>
+
+  {% if es_admin or es_vendedor %}
+  <div class="flex items-center gap-2">
+    
+    {% if es_admin %}
+    <div class="hidden md:flex items-center gap-1 mr-1">
+      <a href="{% url 'products:inventario_pdf' %}" 
+         class="p-2 rounded-lg bg-dark-800 border border-dark-700 hover:border-red-500/50 text-red-400 transition focus-ring shadow-sm"
+         title="Exportar PDF">
+        <i class="fa-solid fa-file-pdf"></i>
+      </a>
+      <a href="{% url 'products:inventario_excel' %}" 
+         class="p-2 rounded-lg bg-dark-800 border border-dark-700 hover:border-green-500/50 text-green-400 transition focus-ring shadow-sm"
+         title="Exportar Excel">
+        <i class="fa-solid fa-file-excel"></i>
+      </a>
+    </div>
+    {% endif %}
+
+    <a href="{% url 'products:crear_producto' %}"
+       class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-500 text-white font-bold hover:bg-brand-600 transition focus-ring shadow-lg shadow-brand-500/20">
+      <i class="fa-solid fa-plus text-xs"></i>
+      <span class="hidden sm:inline text-[11px] uppercase tracking-wide">Nuevo Producto</span>
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-4">
+  <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
+    <form
+      class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end"
+      hx-get="{% url 'products:inventario_table' %}"
+      hx-target="#inventario-table"
+      hx-push-url="true"
+      hx-trigger="change, keyup changed delay:300ms from:input[name='q']"
+    >
+      <div class="md:col-span-5">
+        <label class="block text-xs text-gray-400 mb-1">Buscar</label>
+        <input
+          name="q"
+          value="{{ filtros.q }}"
+          placeholder="Código, nombre o categoría…"
+          class="w-full bg-dark-900/70 border border-dark-700 rounded-lg px-3 py-2 text-white placeholder:text-gray-500 focus-ring"
+        />
+      </div>
+
+      <div class="md:col-span-3">
+        <label class="block text-xs text-gray-400 mb-1">Categoría</label>
+        <select
+          name="cat"
+          class="w-full bg-dark-900/70 border border-dark-700 rounded-lg px-3 py-2 text-white focus-ring"
+        >
+          <option value="">Todas</option>
+          {% for c in categorias %}
+          <option value="{{ c.id }}" {% if filtros.cat|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="md:col-span-2">
+        <label class="block text-xs text-gray-400 mb-1">Orden</label>
+        <select
+          name="order"
+          class="w-full bg-dark-900/70 border border-dark-700 rounded-lg px-3 py-2 text-white focus-ring"
+        >
+          <option value="nombre" {% if filtros.order == "nombre" %}selected{% endif %}>Nombre</option>
+          <option value="categoria" {% if filtros.order == "categoria" %}selected{% endif %}>Categoría</option>
+          <option value="stock" {% if filtros.order == "stock" %}selected{% endif %}>Stock</option>
+          <option value="mas_vendidos" {% if filtros.order == "mas_vendidos" %}selected{% endif %}>Más vendidos</option>
+        </select>
+      </div>
+
+      <div class="md:col-span-2 flex items-center justify-between gap-3">
+        <label class="flex items-center gap-2 text-sm text-gray-300 select-none">
+          <input
+            type="checkbox"
+            name="low"
+            value="1"
+            {% if filtros.low %}checked{% endif %}
+            class="accent-brand-500"
+          />
+          Stock bajo
+        </label>
+        <button
+          type="submit"
+          class="px-3 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold transition focus-ring"
+        >
+          Filtrar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div id="inventario-table" class="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
+    {% include 'products/partials/inventario_table.html' %}
+  </div>
+
+  {% if es_vendedor and not es_admin %}
+  <p class="text-xs text-gray-500">
+    Los vendedores solo pueden añadir stock (entradas de mercancía).
+  </p>
+  {% endif %}
+</div>
+{% endblock %}
+

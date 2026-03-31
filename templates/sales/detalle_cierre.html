@@ -1,208 +1,377 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block content %}
-<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-6 px-4">
-    <div class="max-w-5xl mx-auto">
-        
-        <!-- Header -->
-        <div class="mb-8 flex items-center justify-between">
-            <div>
-                <h1 class="text-4xl font-black text-white mb-2 flex items-center gap-3">
-                    <div class="bg-brand-500 p-3 rounded-xl">
-                        <i class="fa-solid fa-check-circle text-2xl"></i>
-                    </div>
-                    Cierre Completado
-                </h1>
-                <p class="text-gray-400 ml-16">Turno finalizado correctamente</p>
-            </div>
-            <button onclick="window.print()" class="bg-brand-500 hover:bg-brand-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2">
-                <i class="fa-solid fa-print"></i>
-                Imprimir
-            </button>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            
-            <!-- Resumen Financiero -->
-            <div class="lg:col-span-2 bg-dark-800 border border-dark-700 rounded-2xl p-8 shadow-xl">
-                
-                <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-                    <i class="fa-solid fa-chart-bar text-brand-500"></i>
-                    Resumen Financiero
-                </h2>
-
-                <div class="space-y-4">
-                    
-                    <!-- Monto Inicial -->
-                    <div class="flex justify-between items-center pb-4 border-b border-dark-700">
-                        <div>
-                            <p class="text-gray-400 text-sm">Monto Inicial</p>
-                            <p class="text-white font-semibold">Efectivo en caja al inicio</p>
-                        </div>
-                        <p class="text-2xl font-black text-white">${{ cierre.monto_inicial|floatformat:2 }}</p>
-                    </div>
-
-                    <!-- Total Ventas Efectivo -->
-                    <div class="flex justify-between items-center pb-4 border-b border-dark-700">
-                        <div>
-                            <p class="text-gray-400 text-sm">Ventas (Efectivo)</p>
-                            <p class="text-white font-semibold">{{ ventas|length }} transacciones</p>
-                        </div>
-                        <p class="text-2xl font-black text-brand-500">+${{ cierre.total_ventas_esperado|floatformat:2 }}</p>
-                    </div>
-
-                    <!-- Monto Teórico -->
-                    <div class="flex justify-between items-center pb-4 border-b border-dark-700">
-                        <div>
-                            <p class="text-gray-400 text-sm">Monto Teórico</p>
-                            <p class="text-white font-semibold">Esperado en caja</p>
-                        </div>
-                        <p class="text-2xl font-black text-gray-300">${{ cierre.monto_teorico|floatformat:2 }}</p>
-                    </div>
-
-                    <!-- Monto Físico -->
-                    <div class="flex justify-between items-center pb-4 border-b border-dark-700">
-                        <div>
-                            <p class="text-gray-400 text-sm">Monto Físico Ingresado</p>
-                            <p class="text-white font-semibold">Contado en caja</p>
-                        </div>
-                        <p class="text-2xl font-black text-white">${{ cierre.monto_fisico_ingresado|floatformat:2 }}</p>
-                    </div>
-
-                    <!-- Diferencia -->
-                    <div class="flex justify-between items-center pt-4 bg-dark-900 px-6 py-4 rounded-xl border-2 {% if cierre.diferencia == 0 %}border-green-500{% elif cierre.diferencia > 0 %}border-red-500{% else %}border-blue-500{% endif %}">
-                        <div>
-                            <p class="text-gray-400 text-sm">Diferencia</p>
-                            <p class="text-white font-semibold">
-                                {% if cierre.diferencia == 0 %}
-                                    ✓ Caja Balanceada
-                                {% elif cierre.diferencia > 0 %}
-                                    ⚠ Faltante
-                                {% else %}
-                                    + Sobrante
-                                {% endif %}
-                            </p>
-                        </div>
-                        <p class="text-3xl font-black {% if cierre.diferencia == 0 %}text-green-400{% elif cierre.diferencia > 0 %}text-red-400{% else %}text-blue-400{% endif %}">
-                            ${{ cierre.diferencia|floatformat:2 }}
-                        </p>
-                    </div>
-
-                </div>
-
-            </div>
-
-            <!-- Info Adicional -->
-            <div class="space-y-4">
-                
-                <!-- Transferencias -->
-                <div class="bg-dark-800 border border-dark-700 rounded-2xl p-6 shadow-xl">
-                    <p class="text-xs text-gray-500 uppercase font-bold mb-3">Total Transferencias</p>
-                    <p class="text-3xl font-black text-blue-400">${{ cierre.total_transferencias|floatformat:2 }}</p>
-                </div>
-
-                <!-- Productos Vendidos -->
-                <div class="bg-dark-800 border border-dark-700 rounded-2xl p-6 shadow-xl">
-                    <p class="text-xs text-gray-500 uppercase font-bold mb-3">Productos Vendidos</p>
-                    <p class="text-3xl font-black text-brand-500">{{ cierre.total_productos_vendidos }}</p>
-                    <p class="text-xs text-gray-500 mt-2">unidades</p>
-                </div>
-
-                <!-- Fecha y Hora -->
-                <div class="bg-dark-800 border border-dark-700 rounded-2xl p-6 shadow-xl">
-                    <p class="text-xs text-gray-500 uppercase font-bold mb-3">Cierre Registrado</p>
-                    <p class="text-sm text-white font-semibold">{{ cierre.fecha_cierre|date:"d/m/Y" }}</p>
-                    <p class="text-sm text-gray-400">{{ cierre.fecha_cierre|time:"H:i:s" }}</p>
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- Detalle de Productos Vendidos -->
-        <div class="bg-dark-800 border border-dark-700 rounded-2xl p-8 shadow-xl mb-6">
-            
-            <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-                <i class="fa-solid fa-box text-brand-500"></i>
-                Productos Vendidos
-            </h2>
-
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b border-dark-700">
-                            <th class="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Código</th>
-                            <th class="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Producto</th>
-                            <th class="text-center px-4 py-3 text-xs font-bold text-gray-500 uppercase">Cantidad</th>
-                            <th class="text-right px-4 py-3 text-xs font-bold text-gray-500 uppercase">Precio Unit.</th>
-                            <th class="text-right px-4 py-3 text-xs font-bold text-gray-500 uppercase">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for producto in productos_vendidos %}
-                        <tr class="border-b border-dark-700 hover:bg-dark-900 transition-colors">
-                            <td class="px-4 py-3 text-sm text-gray-400 font-mono">{{ producto.nombre }}</td>
-                            <td class="px-4 py-3 text-sm text-white">{{ producto.nombre }}</td>
-                            <td class="px-4 py-3 text-sm text-white text-center font-bold">{{ producto.cantidad }}</td>
-                            <td class="px-4 py-3 text-sm text-right text-brand-500 font-bold">${{ producto.precio_unitario|floatformat:2 }}</td>
-                            <td class="px-4 py-3 text-sm text-right text-white font-bold">${{ producto.cantidad|add:0|mul:producto.precio_unitario|floatformat:2 }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-        </div>
-
-        <!-- Detalle de Ventas -->
-        <div class="bg-dark-800 border border-dark-700 rounded-2xl p-8 shadow-xl">
-            
-            <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-                <i class="fa-solid fa-receipt text-brand-500"></i>
-                Detalle de Ventas ({{ ventas|length }})
-            </h2>
-
-            <div class="space-y-4">
-                {% for venta in ventas %}
-                <div class="bg-dark-900 rounded-xl p-4 border border-dark-700">
-                    <div class="flex justify-between items-start mb-3">
-                        <div>
-                            <p class="text-sm font-bold text-white">Venta #{{ venta.id }}</p>
-                            <p class="text-xs text-gray-400">{{ venta.hora|date:"d/m/Y H:i" }}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-2xl font-black text-brand-500">${{ venta.total|floatformat:2 }}</p>
-                            <p class="text-xs text-gray-400">{{ venta.metodo_pago }}</p>
-                        </div>
-                    </div>
-                    <p class="text-sm text-gray-400">Cliente: {{ venta.cliente }}</p>
-                    <div class="mt-3 pt-3 border-t border-dark-700 text-xs text-gray-500">
-                        {% for detalle in venta.detalles.all %}
-                            <div class="flex justify-between">
-                                <span>{{ detalle.cantidad }}x {{ detalle.producto.nombre }}</span>
-                                <span>${{ detalle.cantidad|floatformat:2 }}</span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-
-        </div>
-
-        <!-- Acciones -->
-        <div class="flex gap-4 mt-8 justify-center">
-            <a href="{% url 'sales:listado' %}" class="bg-dark-700 hover:bg-dark-600 text-white px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2">
-                <i class="fa-solid fa-arrow-left"></i>
-                Volver al Listado
-            </a>
-            <a href="{% url 'sales:descargar_pdf_cierre' cierre.id %}" class="bg-brand-500 hover:bg-brand-600 text-white px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2">
-                <i class="fa-solid fa-download"></i>
-                Descargar PDF
-            </a>
-        </div>
-
+{% block header %}
+<div class="flex items-center justify-between gap-3 pt-4 overflow-visible">
+  <div class="flex items-center gap-3 min-w-0">
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+      <i class="fa-solid fa-check-circle text-lg"></i>
     </div>
+    <div class="min-w-0 text-left">
+      <p class="text-[10px] uppercase tracking-[0.2em] text-emerald-400/80 font-bold leading-none mb-1.5">Caja</p>
+      <h2 class="text-white font-display font-black truncate text-xl leading-normal">
+        Cierre Completado
+      </h2>
+    </div>
+  </div>
+  <a href="{% url 'sales:descargar_pdf_cierre' cierre.id %}" target="_blank" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-blue-600 hover:from-brand-500 hover:to-blue-500 text-white font-bold transition-all flex items-center gap-2 shadow-lg shadow-brand-500/20">
+    <i class="fa-solid fa-file-pdf text-sm"></i>
+    <span class="text-xs uppercase tracking-wide">Exportar PDF</span>
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+  
+  <!-- Estado del cierre - Banner visual -->
+  <div class="relative overflow-hidden rounded-2xl {% if cierre.diferencia_final == 0 %}bg-gradient-to-r from-emerald-600 to-green-600{% elif cierre.diferencia_final > 0 %}bg-gradient-to-r from-red-600 to-rose-600{% else %}bg-gradient-to-r from-blue-600 to-cyan-600{% endif %} shadow-xl">
+    <div class="absolute inset-0 opacity-10">
+      <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtOS45NDEgMC0xOCA4LjA1OS0xOCAxOHM4LjA1OSAxOCAxOCAxOCAxOC04LjA1OSAxOC0xOC04LjA1OS0xOC0xOC0xOHptMCAzMmMtNy43MzIgMC0xNC02LjI2OC0xNC0xNHM2LjI2OC0xNCAxNC0xNCAxNCA2LjI2OCAxNCAxNC02LjI2OCAxNC0xNHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC42Ii8+PC9nPjwvc3ZnPg==')]"></div>
+    </div>
+    <div class="relative px-8 py-6 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
+          {% if cierre.diferencia_final == 0 %}
+          <i class="fa-solid fa-check text-3xl text-white"></i>
+          {% elif cierre.diferencia_final > 0 %}
+          <i class="fa-solid fa-triangle-exclamation text-3xl text-white"></i>
+          {% else %}
+          <i class="fa-solid fa-arrow-trend-up text-3xl text-white"></i>
+          {% endif %}
+        </div>
+        <div>
+          <h2 class="text-2xl font-black text-white">
+            {% if cierre.diferencia_final == 0 %}
+            ✓ Caja Balanceada
+            {% elif cierre.diferencia_final > 0 %}
+            ⚠ Faltante en Caja
+            {% else %}
+            ↑ Sobrante en Caja
+            {% endif %}
+          </h2>
+          <p class="text-white/80 text-sm">
+            Cierre del {{ cierre.fecha_cierre|date:"d/m/Y" }} a las {{ cierre.fecha_cierre|time:"H:i" }}
+          </p>
+        </div>
+      </div>
+      <div class="text-right">
+        <p class="text-white/80 text-xs uppercase tracking-wider font-bold">Diferencia</p>
+        <p class="text-4xl font-black text-white">${{ cierre.diferencia_final|floatformat:2 }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grid principal -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
+    <!-- Resumen Financiero -->
+    <div class="lg:col-span-2 bg-dark-800 border border-dark-700 rounded-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-dark-700 bg-dark-900/30">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-chart-pie text-brand-500"></i>
+          Resumen Financiero
+        </h3>
+      </div>
+      
+      <div class="p-6 space-y-4">
+        <!-- Fila 1: Inicial + Ventas -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-dark-900/50 rounded-xl p-4 border border-dark-700">
+            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Monto Inicial</p>
+            <p class="text-xl font-black text-white">${{ cierre.monto_inicial|floatformat:2 }}</p>
+            <p class="text-[10px] text-gray-600 mt-1">Efectivo al abrir</p>
+          </div>
+          <div class="bg-dark-900/50 rounded-xl p-4 border border-dark-700">
+            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Ventas Efectivo</p>
+            <p class="text-xl font-black text-brand-500">+${{ cierre.total_ventas_esperado|floatformat:2 }}</p>
+            <p class="text-[10px] text-gray-600 mt-1">{{ ventas|length }} transacción{{ ventas|pluralize:"es" }}</p>
+          </div>
+        </div>
+        
+        <!-- Transferencias y Pagos Crédito -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-dark-900/50 rounded-xl p-4 border border-blue-500/20">
+            <p class="text-xs text-blue-400 uppercase font-bold mb-1">Transferencias</p>
+            <p class="text-xl font-black text-blue-400">${{ cierre.total_transferencias|floatformat:2 }}</p>
+            <p class="text-[10px] text-gray-600 mt-1">No entra al efectivo</p>
+          </div>
+          {% if cierre.total_pagos_credito and cierre.total_pagos_credito > 0 %}
+          <div class="bg-dark-900/50 rounded-xl p-4 border border-emerald-500/20">
+            <p class="text-xs text-emerald-400 uppercase font-bold mb-1">Pagos Créditos</p>
+            <p class="text-xl font-black text-emerald-400">+${{ cierre.total_pagos_credito|floatformat:2 }}</p>
+            <p class="text-[10px] text-gray-600 mt-1">Cobros recibidos</p>
+          </div>
+          {% endif %}
+        </div>
+        
+        <!-- Gastos -->
+        {% if cierre.total_gastos and cierre.total_gastos > 0 %}
+        <div class="bg-dark-900/50 rounded-xl p-4 border border-red-500/20">
+          <div class="flex justify-between items-center">
+            <div>
+              <p class="text-xs text-red-400 uppercase font-bold mb-1">Total Gastos</p>
+              <p class="text-xs text-gray-600">{{ gastos_list|length }} gasto{{ gastos_list|pluralize:"s" }} registrados</p>
+            </div>
+            <p class="text-2xl font-black text-red-400">-${{ cierre.total_gastos|floatformat:2 }}</p>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Divider -->
+        <div class="border-t border-dark-700 my-4"></div>
+        
+        <!-- Teórico vs Físico -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-dark-900/70 rounded-xl p-5 border border-dark-600">
+            <p class="text-xs text-gray-400 uppercase font-bold mb-2">Monto Teórico</p>
+            <p class="text-3xl font-black text-gray-300">${{ cierre.monto_teorico_final|floatformat:2 }}</p>
+            <p class="text-[10px] text-gray-600 mt-2">
+              {% if cierre.total_gastos and cierre.total_gastos > 0 %}
+              Inicial + Ventas - Gastos
+              {% else %}
+              Inicial + Ventas
+              {% endif %}
+            </p>
+          </div>
+          <div class="bg-dark-900/70 rounded-xl p-5 border border-dark-600">
+            <p class="text-xs text-gray-400 uppercase font-bold mb-2">Monto Físico</p>
+            <p class="text-3xl font-black text-white">${{ cierre.monto_fisico_ingresado|floatformat:2 }}</p>
+            <p class="text-[10px] text-gray-600 mt-2">Contado en caja</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Info adicional -->
+      <div class="px-6 py-4 border-t border-dark-700 bg-dark-900/30 flex items-center justify-between">
+        <div class="flex items-center gap-6">
+          <div>
+            <p class="text-[10px] text-gray-500 uppercase font-bold">Responsable</p>
+            <p class="text-sm text-white font-medium">{{ cierre.vendedor.get_full_name|default:cierre.vendedor.username }}</p>
+          </div>
+          <div>
+            <p class="text-[10px] text-gray-500 uppercase font-bold">Caja</p>
+            <p class="text-sm text-white font-medium">#{{ cierre.caja.id }}</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <p class="text-[10px] text-gray-500 uppercase font-bold">Productos Vendidos</p>
+          <p class="text-2xl font-black text-brand-500">{{ cierre.total_productos_vendidos }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sidebar stats -->
+    <div class="space-y-4">
+      <div class="bg-dark-800 border border-dark-700 rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center">
+            <i class="fa-solid fa-box text-brand-400"></i>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 uppercase font-bold">Unidades</p>
+            <p class="text-2xl font-black text-white">{{ cierre.total_productos_vendidos }}</p>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500">Productos vendidos en el turno</p>
+      </div>
+      
+      <div class="bg-dark-800 border border-dark-700 rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+            <i class="fa-solid fa-arrow-right-arrow-left text-blue-400"></i>
+          </div>
+          <div>
+            <p class="text-xs text-gray-500 uppercase font-bold">Transfer</p>
+            <p class="text-2xl font-black text-blue-400">${{ cierre.total_transferencias|floatformat:2 }}</p>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500">Pagos por transferencia</p>
+      </div>
+      
+      {% if cierre.total_pagos_credito and cierre.total_pagos_credito > 0 %}
+      <div class="bg-dark-800 border border-emerald-500/30 rounded-2xl p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+            <i class="fa-solid fa-hand-holding-dollar text-emerald-400"></i>
+          </div>
+          <div>
+            <p class="text-xs text-emerald-400 uppercase font-bold">Créditos</p>
+            <p class="text-2xl font-black text-emerald-400">${{ cierre.total_pagos_credito|floatformat:2 }}</p>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500">Cobros de créditos</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Gastos Detail -->
+  {% if gastos_list %}
+  <div class="bg-dark-800 border border-dark-700 rounded-2xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-dark-700 bg-red-500/5">
+      <h3 class="text-lg font-bold text-white flex items-center gap-2">
+        <i class="fa-solid fa-file-invoice-dollar text-red-500"></i>
+        Gastos Registrados
+        <span class="ml-auto text-sm font-normal text-gray-400">{{ gastos_list|length }} total</span>
+      </h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[600px]">
+        <thead class="bg-dark-900/50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">#</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Categoría</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Descripción</th>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Hora</th>
+            <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Monto</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-dark-700">
+          {% for gasto in gastos_list %}
+          <tr class="hover:bg-dark-700/50 transition-colors">
+            <td class="px-6 py-4 text-sm text-gray-400">{{ forloop.counter }}</td>
+            <td class="px-6 py-4">
+              <span class="px-3 py-1 rounded-lg text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20">
+                {{ gasto.get_categoria_display }}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-sm text-white">{{ gasto.descripcion|default:"-" }}</td>
+            <td class="px-6 py-4 text-sm text-gray-400">{{ gasto.fecha|time:"H:i" }}</td>
+            <td class="px-6 py-4 text-right">
+              <span class="text-lg font-black text-red-400">-${{ gasto.monto|floatformat:2 }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="bg-dark-900/50">
+          <tr>
+            <td colspan="4" class="px-6 py-4 text-right font-bold text-white">TOTAL GASTOS:</td>
+            <td class="px-6 py-4 text-right">
+              <span class="text-lg font-black text-red-400">-${{ cierre.total_gastos|floatformat:2 }}</span>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Productos Vendidos -->
+  <div class="bg-dark-800 border border-dark-700 rounded-2xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-dark-700 bg-brand-500/5">
+      <h3 class="text-lg font-bold text-white flex items-center gap-2">
+        <i class="fa-solid fa-box text-brand-500"></i>
+        Productos Vendidos
+        <span class="ml-auto text-sm font-normal text-gray-400">{{ productos_vendidos|length }} tipos</span>
+      </h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[700px]">
+        <thead class="bg-dark-900/50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Producto</th>
+            <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Cantidad</th>
+            <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Precio Unit.</th>
+            <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-dark-700">
+          {% for producto in productos_vendidos %}
+          <tr class="hover:bg-dark-700/50 transition-colors">
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-400 font-bold text-xs">
+                  {{ producto.nombre|slice:":1"|upper }}
+                </div>
+                <div>
+                  <p class="text-sm font-bold text-white">{{ producto.nombre }}</p>
+                  <p class="text-xs text-gray-500">{{ producto.codigo }}</p>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 text-center">
+              <span class="px-3 py-1 rounded-lg text-sm font-bold bg-dark-700 text-white">
+                {{ producto.cantidad }}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-right text-gray-400">${{ producto.precio_unitario|floatformat:2 }}</td>
+            <td class="px-6 py-4 text-right">
+              <span class="text-lg font-black text-brand-400">${{ producto.subtotal|floatformat:2 }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Ventas Detalle -->
+  <div class="bg-dark-800 border border-dark-700 rounded-2xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-dark-700">
+      <h3 class="text-lg font-bold text-white flex items-center gap-2">
+        <i class="fa-solid fa-receipt text-brand-500"></i>
+        Detalle de Ventas
+        <span class="ml-auto text-sm font-normal text-gray-400">{{ ventas|length }} transacción{{ ventas|pluralize:"es" }}</span>
+      </h3>
+    </div>
+    
+    <div class="divide-y divide-dark-700">
+      {% for venta in ventas %}
+      <div class="p-4 hover:bg-dark-700/30 transition-colors">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500/20 to-blue-500/20 border border-brand-500/20 flex items-center justify-center">
+              <i class="fa-solid fa-receipt text-brand-400"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <p class="text-white font-bold">Venta #{{ venta.id }}</p>
+                <span class="px-2 py-0.5 rounded text-xs font-bold {% if venta.metodo_pago == 'EFECTIVO' %}bg-emerald-500/10 text-emerald-400{% elif venta.metodo_pago == 'TRANSFERENCIA' %}bg-blue-500/10 text-blue-400{% else %}bg-purple-500/10 text-purple-400{% endif %}">
+                  {{ venta.metodo_pago }}
+                </span>
+              </div>
+              <p class="text-xs text-gray-500">{{ venta.hora|date:"d/m/Y" }} · {{ venta.hora|time:"H:i" }}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-6">
+            <div class="text-right hidden md:block">
+              <p class="text-xs text-gray-500">Cliente</p>
+              <p class="text-sm text-white">{{ venta.cliente|default:"General" }}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-2xl font-black text-brand-500">${{ venta.total|floatformat:2 }}</p>
+            </div>
+          </div>
+        </div>
+        {% if venta.detalles.all %}
+        <div class="mt-3 pt-3 border-t border-dark-700/50">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {% for detalle in venta.detalles.all %}
+            <div class="bg-dark-900/50 rounded-lg px-3 py-2">
+              <p class="text-xs text-gray-400">{{ detalle.cantidad }}x {{ detalle.producto.nombre|truncatechars:20 }}</p>
+              <p class="text-xs text-brand-400 font-bold">${{ detalle.subtotal|floatformat:2 }}</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Acciones -->
+  <div class="flex flex-col sm:flex-row gap-3 justify-center">
+    <a href="{% url 'sales:listado' %}" class="px-6 py-3 rounded-xl bg-dark-700 border border-dark-600 hover:border-dark-500 text-white font-bold transition-all flex items-center justify-center gap-2">
+      <i class="fa-solid fa-arrow-left"></i>
+      Volver al Listado
+    </a>
+    <a href="{% url 'sales:descargar_pdf_cierre' cierre.id %}" target="_blank" class="px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20">
+      <i class="fa-solid fa-download"></i>
+      Descargar PDF
+    </a>
+  </div>
+
 </div>
 {% endblock %}

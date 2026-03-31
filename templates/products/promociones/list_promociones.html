@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Promociones{% endblock %}
+
+{% block header %}
+<div class="flex items-center justify-between gap-3 pt-4 overflow-visible">
+  <div class="flex items-center gap-3 min-w-0">
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
+      <i class="fa-solid fa-tags text-lg"></i>
+    </div>
+    
+    <div class="min-w-0 text-left">
+      <p class="text-[10px] uppercase tracking-[0.2em] text-orange-400/80 font-bold leading-none mb-1.5">Marketing</p>
+      <h2 class="text-white font-display font-black truncate text-xl leading-normal">
+        Promociones
+      </h2>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <div class="hidden md:flex items-center gap-2 px-4 py-2 bg-dark-800/60 backdrop-blur border border-dark-700/50 rounded-full">
+      <span class="text-xs font-medium text-gray-400">
+        <span class="text-orange-400 font-bold">{{ activas_count }}</span>
+        <span class="text-gray-500">activas</span>
+      </span>
+    </div>
+
+    <a href="{% url 'products:crear_promocion' %}"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-bold transition-all focus-ring shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30">
+      <i class="fa-solid fa-plus text-xs"></i>
+      <span class="text-xs uppercase tracking-wide">Nueva</span>
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    
+  <!-- Stats con filtros -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <a href="?filtro=" class="group relative overflow-hidden {% if not filtro_actual %}border-orange-500/50{% else %}border-dark-700/80{% endif %}">
+      <div class="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div class="relative bg-dark-800/80 backdrop-blur border rounded-xl p-4 transition-all duration-300 group-hover:translate-y-[-2px]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Total</span>
+          <div class="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center">
+            <i class="fa-solid fa-tags text-brand-400 text-sm"></i>
+          </div>
+        </div>
+        <p class="text-2xl font-black text-white tracking-tight">{{ promociones.count }}</p>
+      </div>
+    </a>
+    
+    <a href="?filtro=activas" class="group relative overflow-hidden {% if filtro_actual == 'activas' %}border-green-500/50{% else %}border-dark-700/80{% endif %}">
+      <div class="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div class="relative bg-dark-800/80 backdrop-blur border rounded-xl p-4 transition-all duration-300 group-hover:translate-y-[-2px]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Activas</span>
+          <div class="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+            <i class="fa-solid fa-check-circle text-green-400 text-sm"></i>
+          </div>
+        </div>
+        <p class="text-2xl font-black text-green-400 tracking-tight">{{ activas_count }}</p>
+      </div>
+    </a>
+    
+    <a href="?filtro=inactivas" class="group relative overflow-hidden {% if filtro_actual == 'inactivas' %}border-gray-500/50{% else %}border-dark-700/80{% endif %}">
+      <div class="absolute inset-0 bg-gradient-to-br from-gray-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div class="relative bg-dark-800/80 backdrop-blur border rounded-xl p-4 transition-all duration-300 group-hover:translate-y-[-2px]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Inactivas</span>
+          <div class="w-8 h-8 rounded-lg bg-gray-500/10 flex items-center justify-center">
+            <i class="fa-solid fa-pause-circle text-gray-400 text-sm"></i>
+          </div>
+        </div>
+        <p class="text-2xl font-black text-gray-400 tracking-tight">{{ inactivas_count|default:0 }}</p>
+      </div>
+    </a>
+    
+    <a href="?filtro=vencidas" class="group relative overflow-hidden {% if filtro_actual == 'vencidas' %}border-red-500/50{% else %}border-dark-700/80{% endif %}">
+      <div class="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div class="relative bg-dark-800/80 backdrop-blur border rounded-xl p-4 transition-all duration-300 group-hover:translate-y-[-2px]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Vencidas</span>
+          <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+            <i class="fa-solid fa-clock text-red-400 text-sm"></i>
+          </div>
+        </div>
+        <p class="text-2xl font-black text-red-400 tracking-tight">{{ vencidas_count }}</p>
+      </div>
+    </a>
+  </div>
+
+  <!-- Tabla de Promociones -->
+  <div class="bg-dark-800 rounded-xl border border-dark-700 overflow-x-auto">
+    <table class="w-full min-w-[900px]">
+      <thead class="bg-dark-900/60">
+        <tr>
+          <th class="px-5 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-wider">
+            <i class="fa-solid fa-tag mr-2 text-orange-400"></i>Promoción
+          </th>
+          <th class="px-5 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-wider">
+            <i class="fa-solid fa-box mr-2 text-blue-400"></i>Producto
+          </th>
+          <th class="px-5 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-wider">
+            <i class="fa-solid fa-dollar-sign mr-2 text-emerald-400"></i>Precio Normal
+          </th>
+          <th class="px-5 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-wider">
+            <i class="fa-solid fa-tag mr-2 text-orange-400"></i>Precio Promo
+          </th>
+          <th class="px-5 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-wider">
+            <i class="fa-solid fa-percent mr-2 text-purple-400"></i>Descuento
+          </th>
+          <th class="px-5 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-wider">
+            <i class="fa-solid fa-calendar mr-2 text-brand-500"></i>Vigencia
+          </th>
+          <th class="px-5 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-wider">
+            <i class="fa-solid fa-toggle-on mr-2 text-gray-400"></i>Estado
+          </th>
+          <th class="px-5 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-wider">
+            <i class="fa-solid fa-gear mr-2 text-gray-400"></i>Acciones
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-dark-700">
+        {% for promo in promociones %}
+        <tr class="hover:bg-dark-700/50 transition-all duration-200 {% if not promo.activa and not promo.activa %}opacity-60{% endif %}">
+          <td class="px-5 py-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500/20 to-amber-500/20 border border-orange-500/20 flex items-center justify-center text-orange-400 font-bold text-sm">
+                {{ promo.nombre|slice:":1"|upper }}
+              </div>
+              <div>
+                <p class="text-white font-bold">{{ promo.nombre }}</p>
+                <p class="text-xs text-gray-500">{{ promo.descripcion|default:"Sin descripción"|truncatechars:30 }}</p>
+              </div>
+            </div>
+          </td>
+          <td class="px-5 py-4">
+            <p class="text-white font-medium">{{ promo.producto.nombre }}</p>
+            <p class="text-xs text-gray-500">{{ promo.producto.code }}</p>
+          </td>
+          <td class="px-5 py-4">
+            <span class="text-gray-400 line-through">${{ promo.producto.precio_venta|floatformat:2 }}</span>
+          </td>
+          <td class="px-5 py-4">
+            <span class="text-lg font-black text-green-400">${{ promo.precio_promocional|floatformat:2 }}</span>
+          </td>
+          <td class="px-5 py-4">
+            <span class="px-2 py-1 rounded-lg text-xs font-bold {% if promo.tipo_descuento == 'PORCENTAJE' %}bg-purple-500/20 text-purple-400{% else %}bg-blue-500/20 text-blue-400{% endif %}">
+              {% if promo.tipo_descuento == 'PORCENTAJE' %}{{ promo.valor_descuento }}%{% else %}${{ promo.valor_descuento }}{% endif %}
+            </span>
+          </td>
+          <td class="px-5 py-4">
+            <div class="text-sm">
+              <p class="text-white">{{ promo.fecha_inicio|date:"d M" }} - {{ promo.fecha_fin|date:"d M Y" }}</p>
+              {% if promo.activa and promo.fecha_inicio <= hoy and promo.fecha_fin >= hoy %}
+              <p class="text-xs text-green-400">Vigente</p>
+              {% elif promo.fecha_fin < hoy %}
+              <p class="text-xs text-red-400">Vencida</p>
+              {% endif %}
+            </div>
+          </td>
+          <td class="px-5 py-4 text-center">
+            {% if promo.activa and promo.fecha_inicio <= hoy and promo.fecha_fin >= hoy %}
+            <span class="px-3 py-1.5 bg-green-500/10 text-green-400 rounded-lg text-xs font-bold border border-green-500/20">
+              <i class="fa-solid fa-circle text-[8px] mr-1"></i>Activa
+            </span>
+            {% elif promo.fecha_fin < hoy %}
+            <span class="px-3 py-1.5 bg-red-500/10 text-red-400 rounded-lg text-xs font-bold border border-red-500/20">
+              <i class="fa-solid fa-clock text-[8px] mr-1"></i>Vencida
+            </span>
+            {% else %}
+            <span class="px-3 py-1.5 bg-gray-500/10 text-gray-400 rounded-lg text-xs font-bold border border-gray-500/20">
+              <i class="fa-solid fa-pause text-[8px] mr-1"></i>Inactiva
+            </span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-4">
+            <div class="flex items-center justify-center gap-2">
+              <a href="{% url 'products:editar_promocion' promo.id %}"
+                 class="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:border-blue-400 hover:bg-blue-500/20 text-blue-400 hover:text-white transition-all flex items-center justify-center"
+                 title="Editar">
+                <i class="fa-solid fa-pen"></i>
+              </a>
+              <button onclick="togglePromocion({{ promo.id }})" 
+                      class="w-9 h-9 rounded-lg {% if promo.activa %}bg-red-500/10 border border-red-500/20 hover:border-red-400 hover:bg-red-500/20 text-red-400 hover:text-white{% else %}bg-green-500/10 border border-green-500/20 hover:border-green-400 hover:bg-green-500/20 text-green-400 hover:text-white{% endif %} transition-all flex items-center justify-center"
+                      title="{% if promo.activa %}Desactivar{% else %}Activar{% endif %}">
+                <i class="fa-solid fa-power-off"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="px-6 py-16 text-center">
+            <div class="flex flex-col items-center justify-center">
+              <div class="w-16 h-16 rounded-2xl bg-dark-700 flex items-center justify-center mb-4">
+                <i class="fa-solid fa-tags text-3xl text-gray-600"></i>
+              </div>
+              <h3 class="text-lg font-black text-white mb-2">Sin promociones</h3>
+              <p class="text-gray-500 mb-4">No hay promociones {% if filtro_actual %}{{ filtro_actual }}{% else %}registradas{% endif %}</p>
+              <a href="{% url 'products:crear_promocion' %}" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-medium transition">
+                <i class="fa-solid fa-plus mr-2"></i>Crear promoción
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+async function togglePromocion(id) {
+  try {
+    const response = await fetch(`/productos/promociones/${id}/toggle/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+        'Content-Type': 'application/json'
+      }
+    });
+    const data = await response.json();
+    if (data.success) {
+      showToast('Promoción actualizada', 'success');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      showToast(data.error || 'Error al actualizar', 'error');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    showToast('Error de conexión', 'error');
+  }
+}
+</script>
+{% endblock %}

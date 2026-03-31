@@ -1,15 +1,37 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:15
+    container_name: pos_db
+    environment:
+      POSTGRES_DB: pos_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
   web:
     build: .
     container_name: inventory_web
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - .:/app
+      - static_volume:/app/staticfiles
     ports:
       - "8000:8000"
     environment:
-      - PYTHONDONTWRITEBYTECODE=1
-      - PYTHONUNBUFFERED=1
+      - DEBUG=False
+      - SECRET_KEY=sf4-u=yf(locdy@wo-c#v&**3w1jh6^ganl63yw6=i890(8ui(
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/pos_db
+    depends_on:
+      - db
     stdin_open: true
     tty: true
+
+volumes:
+  postgres_data:
+  static_volume:

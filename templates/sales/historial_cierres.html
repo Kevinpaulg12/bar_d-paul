@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% load sales_filters %}
+
+{% block title %}Historial de Cierres de Caja{% endblock %}
+
+{% block header %}
+<div class="flex items-center justify-between gap-4">
+  <div>
+    <h2 class="text-white font-display text-2xl">Historial de Cierres de Caja</h2>
+    <p class="text-gray-400 text-sm">Registro completo de todos los cierres realizados</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+  <!-- Estadísticas -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-dark-800 border border-dark-700 rounded-xl p-5">
+      <div class="flex items-center gap-3">
+        <div class="bg-brand-500/10 p-3 rounded-lg">
+          <i class="fa-solid fa-cash-register text-brand-500 text-xl"></i>
+        </div>
+        <div>
+          <p class="text-xs text-gray-400 uppercase font-bold">Total Cierres</p>
+          <p class="text-2xl font-black text-white">{{ stats.total_cierres }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-dark-800 border border-dark-700 rounded-xl p-5">
+      <div class="flex items-center gap-3">
+        <div class="bg-emerald-500/10 p-3 rounded-lg">
+          <i class="fa-solid fa-money-bill text-emerald-500 text-xl"></i>
+        </div>
+        <div>
+          <p class="text-xs text-gray-400 uppercase font-bold">Total Efectivo</p>
+          <p class="text-2xl font-black text-emerald-400">${{ stats.total_efectivo|floatformat:2 }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-dark-800 border border-dark-700 rounded-xl p-5">
+      <div class="flex items-center gap-3">
+        <div class="bg-red-500/10 p-3 rounded-lg">
+          <i class="fa-solid fa-receipt text-red-500 text-xl"></i>
+        </div>
+        <div>
+          <p class="text-xs text-gray-400 uppercase font-bold">Total Gastos</p>
+          <p class="text-2xl font-black text-red-400">${{ stats.total_gastos|floatformat:2 }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-dark-800 border border-dark-700 rounded-xl p-5">
+      <div class="flex items-center gap-3">
+        <div class="bg-blue-500/10 p-3 rounded-lg">
+          <i class="fa-solid fa-mobile-screen text-blue-500 text-xl"></i>
+        </div>
+        <div>
+          <p class="text-xs text-gray-400 uppercase font-bold">Total Transferencias</p>
+          <p class="text-2xl font-black text-blue-400">${{ stats.total_transferencias|floatformat:2 }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de cierres -->
+  <div class="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-dark-700">
+        <thead class="bg-dark-900/60">
+          <tr>
+            <th class="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-wider">
+              <i class="fa-solid fa-calendar mr-2 text-brand-500"></i>Fecha
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-wider">
+              <i class="fa-solid fa-user mr-2 text-indigo-400"></i>Vendedor
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-wider">
+              <i class="fa-solid fa-dollar-sign mr-2 text-emerald-400"></i>Inicial
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-wider">
+              <i class="fa-solid fa-cash-register mr-2 text-brand-500"></i>Ventas
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-wider">
+              <i class="fa-solid fa-receipt mr-2 text-red-400"></i>Gastos
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-wider">
+              <i class="fa-solid fa-hand-holding-dollar mr-2 text-blue-400"></i>Transferencias
+            </th>
+            <th class="px-6 py-4 text-left text-xs font-black text-gray-400 uppercase tracking-wider">
+              <i class="fa-solid fa-scale-balanced mr-2 text-amber-400"></i>Diferencia
+            </th>
+            <th class="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-wider">
+              <i class="fa-solid fa-gear mr-2 text-gray-400"></i>Acciones
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-dark-700">
+          {% for cierre in cierres %}
+          <tr class="hover:bg-dark-700/50 transition">
+            <td class="px-6 py-5 whitespace-nowrap">
+              <p class="text-white font-semibold">{{ cierre.fecha_cierre|date:"d/m/Y" }}</p>
+              <p class="text-xs text-gray-500">{{ cierre.fecha_cierre|time:"H:i" }}</p>
+            </td>
+            <td class="px-6 py-5 whitespace-nowrap">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                  {{ cierre.vendedor.get_full_name|default:cierre.vendedor.username|slice:":1"|upper }}
+                </div>
+                <span class="text-sm text-gray-300">{{ cierre.vendedor.get_full_name|default:cierre.vendedor.username }}</span>
+              </div>
+            </td>
+            <td class="px-6 py-5 whitespace-nowrap">
+              <span class="text-white font-semibold">${{ cierre.monto_inicial }}</span>
+            </td>
+            <td class="px-6 py-5 whitespace-nowrap">
+              <span class="text-emerald-400 font-semibold">${{ cierre.total_ventas_esperado }}</span>
+            </td>
+            <td class="px-6 py-5 whitespace-nowrap">
+              <span class="text-red-400 font-semibold">${{ cierre.total_gastos|default:"0.00" }}</span>
+            </td>
+            <td class="px-6 py-5 whitespace-nowrap">
+              <span class="text-blue-400 font-semibold">${{ cierre.total_transferencias|default:"0.00" }}</span>
+            </td>
+            <td class="px-6 py-5 whitespace-nowrap">
+              {% if cierre.diferencia_final > 0 %}
+              <span class="text-red-400 font-bold">-${{ cierre.diferencia_final|floatformat:2 }}</span>
+              {% elif cierre.diferencia_final < 0 %}
+              <span class="text-blue-400 font-bold">+${{ cierre.diferencia_final|abs_value|floatformat:2 }}</span>
+              {% else %}
+              <span class="text-emerald-400 font-bold">$0.00</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-5 whitespace-nowrap text-center">
+              <div class="flex items-center justify-center gap-2">
+                <a
+                  href="{% url 'sales:ver_cierre' cierre.id %}"
+                  class="w-9 h-9 rounded-lg bg-blue-500/20 border border-blue-500/40 hover:border-blue-400 hover:bg-blue-500/30 text-blue-400 hover:text-white transition flex items-center justify-center"
+                  title="Ver detalle"
+                >
+                  <i class="fa-solid fa-eye"></i>
+                </a>
+                <a
+                  href="{% url 'sales:descargar_pdf_cierre' cierre.id %}"
+                  class="w-9 h-9 rounded-lg bg-red-500/20 border border-red-500/40 hover:border-red-400 hover:bg-red-500/30 text-red-400 hover:text-white transition flex items-center justify-center"
+                  title="Descargar PDF"
+                >
+                  <i class="fa-solid fa-file-pdf"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="px-6 py-12 text-center">
+              <div class="flex flex-col items-center justify-center">
+                <div class="bg-dark-700 rounded-full p-6 mb-4">
+                  <i class="fa-solid fa-cash-register text-gray-600 text-5xl"></i>
+                </div>
+                <h3 class="text-xl font-black text-white mb-2">No hay cierres registrados</h3>
+                <p class="text-gray-500">Los cierres de caja aparecerán aquí cuando se realicen</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if cierres.has_other_pages %}
+    <div class="px-6 py-4 border-t border-dark-700 flex items-center justify-between">
+      <p class="text-sm text-gray-400">
+        Página {{ cierres.number }} de {{ cierres.paginator.num_pages }}
+      </p>
+      <div class="flex gap-2">
+        {% if cierres.has_previous %}
+        <a href="?page={{ cierres.previous_page_number }}" class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded-lg hover:bg-dark-600 transition">
+          <i class="fa-solid fa-chevron-left mr-1"></i>Anterior
+        </a>
+        {% endif %}
+        {% if cierres.has_next %}
+        <a href="?page={{ cierres.next_page_number }}" class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded-lg hover:bg-dark-600 transition">
+          Siguiente<i class="fa-solid fa-chevron-right ml-1"></i>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

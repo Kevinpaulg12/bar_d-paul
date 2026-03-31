@@ -1,5 +1,49 @@
 {% extends 'base.html' %}
 
+{% block header %}
+<div class="flex items-center justify-between gap-3 pt-4 overflow-visible">
+  <div class="flex items-center gap-3 min-w-0">
+    <div class="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 flex-shrink-0 flex items-center justify-center text-brand-500 shadow-sm shadow-brand-500/5">
+      <i class="fa-solid fa-chart-line"></i>
+    </div>
+    
+    <div class="min-w-0 text-left">
+      <p class="text-[11px] uppercase tracking-wider text-gray-500 font-bold leading-none mb-1">Registro Diario</p>
+      <h2 class="text-white font-display font-extrabold truncate leading-tight text-lg">
+        Ventas de Hoy 
+        <span class="text-gray-600 font-medium ml-1 text-sm">• {{ num_ventas }}</span>
+      </h2>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <span class="hidden lg:inline-flex items-center gap-2 text-[11px] font-bold text-gray-500 bg-dark-800/60 border border-dark-700 rounded-lg px-3 py-2">
+      <i class="fa-regular fa-calendar text-gray-600"></i>
+      {{ fecha_hoy|date:"d/m/Y" }}
+    </span>
+
+    <button onclick="abrirModalBaja()" 
+            class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-800 border border-dark-700 text-red-400 font-bold hover:bg-red-500/10 transition focus-ring">
+      <i class="fa-solid fa-circle-down"></i>
+      <span class="hidden sm:inline text-[11px] uppercase tracking-wide text-white">Baja</span>
+    </button>
+
+    {% if puede_vender %}
+      <a href="{% url 'sales:nueva_venta' %}" 
+         class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-500 text-white font-bold hover:bg-brand-600 transition focus-ring shadow-lg shadow-brand-500/20">
+        <i class="fa-solid fa-plus"></i>
+        <span class="hidden sm:inline text-[11px] uppercase tracking-wide">Venta</span>
+      </a>
+    {% else %}
+      <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-dark-800 border border-dark-700 text-gray-600 font-bold opacity-50 cursor-not-allowed"
+           title="Acceso restringido">
+        <i class="fa-solid fa-lock"></i>
+        <span class="hidden sm:inline text-[11px] uppercase tracking-wide">Venta</span>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
 {% block content %}
 <div class="py-8 px-4">
     <div class="max-w-7xl mx-auto">
@@ -15,46 +59,39 @@
                     <h2 class="text-2xl font-black text-red-500 mb-2">{{ error }}</h2>
                     <p class="text-gray-300 mb-4">Necesitas abrir una caja antes de realizar ventas.</p>
                 </div>
+                {% if puede_abrir_caja %}
                 <a href="{% url 'sales:nueva_venta' %}"
                    class="bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-8 rounded-xl transition-all transform hover:scale-105 whitespace-nowrap">
                     <i class="fa-solid fa-unlock mr-2"></i>Abrir Caja
                 </a>
+                {% else %}
+                <span class="bg-dark-700 text-gray-400 font-bold py-3 px-8 rounded-xl whitespace-nowrap cursor-not-allowed opacity-70"
+                      title="Solo el Vendedor Responsable puede abrir caja">
+                    <i class="fa-solid fa-lock mr-2"></i>Abrir Caja
+                </span>
+                {% endif %}
             </div>
         </div>
         {% else %}
-
-        <!-- Header con título y acción principal -->
-        <div class="mb-8">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div>
-                    <h1 class="text-4xl font-black text-white mb-2 flex items-center gap-3">
-                        <div class="bg-brand-500 p-3 rounded-xl">
-                            <i class="fa-solid fa-chart-line text-2xl"></i>
-                        </div>
-                        Ventas de Hoy
-                    </h1>
-                    <p class="text-gray-400 ml-16">
-                        {{ num_ventas }} venta{{ num_ventas|pluralize }}
-                        • {{ fecha_hoy|date:"l, d F Y" }}
-                    </p>
-                </div>
-                <div class="flex items-center gap-4">
-                    <button onclick="abrirModalBaja()" 
-                    class="group inline-flex items-center justify-center gap-3 bg-dark-700 hover:bg-red-600/20 border border-dark-600 hover:border-red-500 text-gray-300 hover:text-red-500 font-bold py-4 px-6 rounded-xl transition-all duration-300 transform hover:-translate-y-1">
-                        <i class="fa-solid fa-circle-down text-xl group-hover:shake"></i>
-                        <span class="text-lg">Reportar Baja</span>
-                    </button>
-
-                    <a href="{% url 'sales:nueva_venta' %}" 
-                    class="group inline-flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-black py-4 px-6 rounded-xl shadow-xl shadow-blue-900/20 transition-all duration-300 transform hover:-translate-y-1">
-                        <i class="fa-solid fa-plus text-xl group-hover:rotate-90 transition-transform duration-300"></i>
-                        <span class="text-lg">Nueva Venta</span>
-                    </a>
-                </div>
-                
-            </div>
-        </div>
-
+        <div
+            id="ventas-panel"
+            hx-boost="true"
+            hx-target="#ventas-panel"
+            hx-select="#ventas-panel"
+            hx-swap="outerHTML"
+            hx-push-url="true"
+        >
+        <div
+            class="hidden"
+            hx-get="{% url 'sales:listado' %}"
+            hx-trigger="every 8s"
+            hx-target="#ventas-panel"
+            hx-select="#ventas-panel"
+            hx-swap="outerHTML"
+            hx-include="#ventas-filters"
+            hx-push-url="false"
+            hx-sync="this:replace"
+        ></div>
         <!-- Tarjetas de estadísticas -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             
@@ -102,8 +139,8 @@
                 </div>
                 <p class="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-1">Última Venta</p>
                 <p class="text-3xl font-black text-white">
-                    {% if ventas %}
-                        {{ ventas.0.hora|date:"H:i" }}
+                    {% if ultima_venta %}
+                        {{ ultima_venta.hora|date:"H:i" }}
                     {% else %}
                         --:--
                     {% endif %}
@@ -122,16 +159,49 @@
                         <i class="fa-solid fa-list text-brand-500"></i>
                         Historial de Ventas
                     </h3>
-                    <div class="flex items-center gap-3">
-                        <button class="text-sm text-gray-400 hover:text-white font-semibold flex items-center gap-2 px-4 py-2 hover:bg-dark-700 rounded-lg transition-all">
-                            <i class="fa-solid fa-filter"></i>
+                    <form
+                        id="ventas-filters"
+                        class="flex items-center gap-2 flex-wrap"
+                        hx-get="{% url 'sales:listado' %}"
+                        hx-target="#ventas-panel"
+                        hx-select="#ventas-panel"
+                        hx-swap="outerHTML"
+                        hx-push-url="true"
+                        hx-trigger="change, keyup changed delay:300ms from:input[name='q']"
+                    >
+                        <input type="hidden" name="page" value="{{ ventas.number }}" />
+                        <div class="relative">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                            <input
+                                name="q"
+                                value="{{ filtros.q }}"
+                                placeholder="Buscar cliente..."
+                                class="bg-dark-700 border border-dark-600 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder:text-gray-500 focus-ring"
+                            />
+                        </div>
+                        <select
+                            name="metodo_pago"
+                            class="bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-sm text-white focus-ring"
+                        >
+                            <option value="" {% if not filtros.metodo_pago %}selected{% endif %}>Todos</option>
+                            <option value="EFECTIVO" {% if filtros.metodo_pago == "EFECTIVO" %}selected{% endif %}>Efectivo</option>
+                            <option value="TRANSFERENCIA" {% if filtros.metodo_pago == "TRANSFERENCIA" %}selected{% endif %}>Transferencia</option>
+                            <option value="CREDITO" {% if filtros.metodo_pago == "CREDITO" %}selected{% endif %}>Crédito</option>
+                        </select>
+                        <button
+                            type="submit"
+                            class="text-sm font-black text-white bg-dark-700 hover:bg-dark-600 border border-dark-600 rounded-lg px-4 py-2 transition-all"
+                        >
                             Filtrar
                         </button>
-                        <button class="text-sm text-gray-400 hover:text-white font-semibold flex items-center gap-2 px-4 py-2 hover:bg-dark-700 rounded-lg transition-all">
-                            <i class="fa-solid fa-file-excel"></i>
-                            Exportar
-                        </button>
-                    </div>
+                        <a
+                            href="{% url 'sales:listado' %}"
+                            class="text-sm text-gray-400 hover:text-white font-semibold flex items-center gap-2 px-3 py-2 hover:bg-dark-700 rounded-lg transition-all"
+                        >
+                            <i class="fa-solid fa-rotate-left"></i>
+                            Limpiar
+                        </a>
+                    </form>
                 </div>
             </div>
 
@@ -212,6 +282,11 @@
                                         <i class="fa-solid fa-money-bill-wave"></i>
                                         Efectivo
                                     </span>
+                                {% elif venta.metodo_pago == "CREDITO" %}
+                                    <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 text-amber-400 rounded-lg text-xs font-bold">
+                                        <i class="fa-solid fa-credit-card"></i>
+                                        Crédito
+                                    </span>
                                 {% else %}
                                     <span class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg text-xs font-bold">
                                         <i class="fa-solid fa-mobile-screen"></i>
@@ -244,9 +319,15 @@
                                     <button onclick="imprimirVenta({{ venta.id }})" class="text-brand-400 hover:text-white hover:bg-brand-500/20 p-2 rounded-lg transition-all" title="Imprimir">
                                         <i class="fa-solid fa-print"></i>
                                     </button>
+                                    {% if puede_vender %}
                                     <button onclick="anularVenta({{ venta.id }})" class="text-red-500 hover:text-white hover:bg-red-500/20 p-2 rounded-lg transition-all" title="Anular">
                                         <i class="fa-solid fa-ban"></i>
                                     </button>
+                                    {% else %}
+                                    <button type="button" class="text-red-500/40 p-2 rounded-lg cursor-not-allowed" title="Solo el Vendedor Responsable puede anular ventas" disabled aria-disabled="true">
+                                        <i class="fa-solid fa-ban"></i>
+                                    </button>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -263,7 +344,7 @@
                     </p>
                     <div class="flex gap-2">
                         {% if ventas.has_previous %}
-                        <a href="?page={{ ventas.previous_page_number }}" class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded-lg hover:bg-dark-600 transition-all">
+                        <a href="?page={{ ventas.previous_page_number }}{% if filtros.q %}&q={{ filtros.q|urlencode }}{% endif %}{% if filtros.metodo_pago %}&metodo_pago={{ filtros.metodo_pago }}{% endif %}" class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded-lg hover:bg-dark-600 transition-all">
                             <i class="fa-solid fa-chevron-left mr-1"></i>
                             Anterior
                         </a>
@@ -275,7 +356,7 @@
                         {% endif %}
                         
                         {% if ventas.has_next %}
-                        <a href="?page={{ ventas.next_page_number }}" class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded-lg hover:bg-dark-600 transition-all">
+                        <a href="?page={{ ventas.next_page_number }}{% if filtros.q %}&q={{ filtros.q|urlencode }}{% endif %}{% if filtros.metodo_pago %}&metodo_pago={{ filtros.metodo_pago }}{% endif %}" class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded-lg hover:bg-dark-600 transition-all">
                             Siguiente
                             <i class="fa-solid fa-chevron-right ml-1"></i>
                         </a>
@@ -297,15 +378,12 @@
                         <i class="fa-solid fa-receipt text-gray-600 text-6xl"></i>
                     </div>
                     <h3 class="text-2xl font-black text-white mb-2">No hay ventas registradas hoy</h3>
-                    <p class="text-gray-500 mb-6">¡Comienza a vender para ver tus transacciones aquí!</p>
-                    <a href="{% url 'sales:nueva_venta' %}" 
-                       class="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-6 rounded-xl transition-all">
-                        <i class="fa-solid fa-plus"></i>
-                        Crear Primera Venta
-                    </a>
+                    <p class="text-gray-500">¡Comienza a vender para ver tus transacciones aquí!</p>
                 </div>
             </div>
             {% endif %}
+
+        </div>
 
         </div>
 
@@ -482,72 +560,80 @@
             const venta = await response.json();
 
             if (!response.ok || !venta.success) {
-                alert('❌ Error al cargar detalles de la venta');
+                showToast('Error al cargar detalles de la venta', 'error');
                 return;
             }
 
-            // Construir modal con detalles
+            // Construir modal con detalles mejorado
             let detallesHTML = `
-                <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" id="modalDetalles">
-                    <div class="bg-dark-800 rounded-lg p-8 max-w-2xl w-full border border-dark-700 max-h-96 overflow-y-auto">
-                        <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-2xl font-bold text-white">Detalles de Venta #${ventaId.toString().padStart(4, '0')}</h2>
-                            <button onclick="document.getElementById('modalDetalles').remove()" class="text-gray-400 hover:text-white">
-                                <i class="fa-solid fa-xmark text-2xl"></i>
-                            </button>
+                <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" id="modalDetalles" onclick="if(event.target === this) this.remove()">
+                    <div class="bg-dark-800 rounded-2xl border border-dark-700 w-full max-w-lg shadow-2xl overflow-hidden">
+                        <div class="relative">
+                            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-500 to-blue-500"></div>
                         </div>
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-brand-500/20 flex items-center justify-center text-brand-400">
+                                        <i class="fa-solid fa-receipt"></i>
+                                    </div>
+                                    <div>
+                                        <h2 class="text-xl font-black text-white">Venta #${ventaId.toString().padStart(4, '0')}</h2>
+                                        <p class="text-xs text-gray-500">${venta.hora}</p>
+                                    </div>
+                                </div>
+                                <button onclick="document.getElementById('modalDetalles').remove()" class="w-8 h-8 rounded-lg bg-dark-700 hover:bg-dark-600 text-gray-400 hover:text-white transition flex items-center justify-center">
+                                    <i class="fa-solid fa-times"></i>
+                                </button>
+                            </div>
 
-                        <div class="grid grid-cols-2 gap-6 mb-6">
-                            <div>
-                                <p class="text-gray-400 text-sm">Cliente</p>
-                                <p class="text-white font-bold">${venta.cliente}</p>
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                <div class="bg-dark-900/50 rounded-xl p-4 border border-dark-700">
+                                    <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Cliente</p>
+                                    <p class="text-white font-bold">${venta.cliente || 'General'}</p>
+                                </div>
+                                <div class="bg-dark-900/50 rounded-xl p-4 border border-dark-700">
+                                    <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Método</p>
+                                    <p class="text-white font-bold ${venta.metodo_pago === 'EFECTIVO' ? 'text-emerald-400' : venta.metodo_pago === 'TRANSFERENCIA' ? 'text-blue-400' : 'text-purple-400'}">${venta.metodo_pago}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p class="text-gray-400 text-sm">Hora</p>
-                                <p class="text-white font-bold">${venta.hora}</p>
+
+                            <div class="mb-4">
+                                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <i class="fa-solid fa-box text-brand-500"></i>
+                                    Productos
+                                </h3>
+                                <div class="bg-dark-900/30 rounded-xl border border-dark-700 overflow-hidden">
+                                    <table class="w-full text-sm">
+                                        <thead class="bg-dark-900/50">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left text-xs font-bold text-gray-500 uppercase">Producto</th>
+                                                <th class="px-3 py-2 text-center text-xs font-bold text-gray-500 uppercase">Cant</th>
+                                                <th class="px-3 py-2 text-right text-xs font-bold text-gray-500 uppercase">Precio</th>
+                                                <th class="px-3 py-2 text-right text-xs font-bold text-gray-500 uppercase">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-dark-700">
+                                            ${venta.detalles.map(d => `
+                                                <tr>
+                                                    <td class="px-3 py-2.5 text-gray-300">${d.producto}</td>
+                                                    <td class="px-3 py-2.5 text-center">
+                                                        <span class="px-2 py-0.5 rounded bg-dark-700 text-white font-bold text-xs">${d.cantidad}</span>
+                                                    </td>
+                                                    <td class="px-3 py-2.5 text-right text-gray-400">$${parseFloat(d.precio).toFixed(2)}</td>
+                                                    <td class="px-3 py-2.5 text-right text-white font-bold">$${parseFloat(d.subtotal).toFixed(2)}</td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                            <div>
-                                <p class="text-gray-400 text-sm">Método de Pago</p>
-                                <p class="text-white font-bold">${venta.metodo_pago}</p>
-                            </div>
-                            <div>
-                                <p class="text-gray-400 text-sm">Total</p>
-                                <p class="text-white font-bold text-lg">$${venta.total}</p>
+
+                            <div class="flex items-center justify-between pt-4 border-t border-dark-700">
+                                <span class="text-gray-400 font-medium">Total</span>
+                                <span class="text-2xl font-black text-brand-400">$${venta.total}</span>
                             </div>
                         </div>
-
-                        <h3 class="text-lg font-bold text-white mb-4">Productos</h3>
-                        <table class="w-full text-sm">
-                            <thead class="bg-dark-700">
-                                <tr>
-                                    <th class="px-3 py-2 text-left text-gray-400">Producto</th>
-                                    <th class="px-3 py-2 text-right text-gray-400">Cantidad</th>
-                                    <th class="px-3 py-2 text-right text-gray-400">Precio</th>
-                                    <th class="px-3 py-2 text-right text-gray-400">Subtotal</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${venta.detalles.map(d => `
-                                    <tr class="border-t border-dark-700">
-                                        <td class="px-3 py-3 text-gray-300">${d.producto}</td>
-                                        <td class="px-3 py-3 text-right text-white">${d.cantidad}</td>
-                                        <td class="px-3 py-3 text-right text-white">$${d.precio}</td>
-                                        <td class="px-3 py-3 text-right text-white font-bold">$${d.subtotal}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-
-                        <div class="mt-6 pt-6 border-t border-dark-700">
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-400">Total:</span>
-                                <span class="text-white font-bold text-xl">$${venta.total}</span>
-                            </div>
-                        </div>
-
-                        <button onclick="document.getElementById('modalDetalles').remove()" class="w-full mt-6 bg-dark-700 hover:bg-dark-600 text-white py-2 rounded-lg transition">
-                            Cerrar
-                        </button>
                     </div>
                 </div>
             `;
@@ -562,15 +648,23 @@
 
     // Imprimir venta
     function imprimirVenta(ventaId) {
-        // Descargar PDF del ticket
-        window.location.href = `/sales/api/venta/${ventaId}/ticket/`;
+        // Descargar/abrir PDF del ticket
+        const url = `/api/venta/${ventaId}/ticket/`;
+        window.open(url, '_blank');
     }
 
     // Anular venta
     async function anularVenta(ventaId) {
-        if (!confirm('⚠️ ¿Estás seguro de que deseas ANULAR esta venta? Esta acción revertirá el stock y no se puede deshacer.')) {
-            return;
-        }
+        const confirmed = await confirmAction({
+            title: 'Anular venta',
+            message: '⚠️ ¿Estás seguro de que deseas ANULAR esta venta? Esta acción revertirá el stock y no se puede deshacer.',
+            icon: 'warning',
+            type: 'danger',
+            confirmText: 'Sí, anular',
+            cancelText: 'No anular'
+        });
+        
+        if (!confirmed) return;
 
         try {
             const response = await fetch(`/api/ventas/${ventaId}/anular/`, {

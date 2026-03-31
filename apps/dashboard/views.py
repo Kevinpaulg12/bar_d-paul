@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from apps.sales.models import Caja, Venta, CierreCaja
 from apps.products.models import Producto, SolicitudBaja
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, DecimalField, F
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from datetime import timedelta
@@ -75,8 +75,11 @@ def dashboard_admin(request):
     )['total']
     
     # ===== STOCK =====
-    stock_bajo = Producto.objects.filter(stock_actual__lt=10).count()
+    stock_bajo = Producto.objects.filter(stock_actual__lt=F('stock_minimo')).count()
     total_productos = Producto.objects.count()
+    productos_stock_bajo = Producto.objects.filter(
+        stock_actual__lt=F('stock_minimo')
+    ).select_related('categoria').order_by('stock_actual')[:20]
     
     # ===== SOLICITUDES DE BAJA =====
     bajas_pendientes = SolicitudBaja.objects.filter(estado='PENDIENTE').count()
@@ -92,15 +95,41 @@ def dashboard_admin(request):
     ).values('responsable').distinct().count()
     
     # ===== DATOS PARA GRÁFICOS =====
+    # Obtener offset para paginación del gráfico (7 días por bloque)
+    offset = int(request.GET.get('offset', 0))
+    
+    # Calcular rango de fechas para el bloque actual
+    fecha_fin = ahora.date() - timedelta(days=offset)
+    fecha_inicio = fecha_fin - timedelta(days=6)
+    
     ventas_por_dia = Venta.objects.filter(
-        hora__gte=hace_7_dias
+        hora__date__gte=fecha_inicio,
+        hora__date__lte=fecha_fin
     ).values('hora__date').annotate(
         total=Sum('total'),
         cantidad=Count('id')
     ).order_by('hora__date')
     
-    labels_ventas = [str(v['hora__date']) for v in ventas_por_dia]
-    datos_ventas = [float(v['total'] or 0) for v in ventas_por_dia]
+    ventas_dict = {v['hora__date'].isoformat(): float(v['total'] or 0) for v in ventas_por_dia}
+    labels_ventas = []
+    datos_ventas = []
+    
+    dias_semana_es = {
+        'Monday': 'Lunes',
+        'Tuesday': 'Martes',
+        'Wednesday': 'Miércoles',
+        'Thursday': 'Jueves',
+        'Friday': 'Viernes',
+        'Saturday': 'Sábado',
+        'Sunday': 'Domingo'
+    }
+
+    for i in range(7):
+        fecha = fecha_fin - timedelta(days=6-i)
+        nombre_dia_en = fecha.strftime('%A')
+        nombre_dia_es = dias_semana_es.get(nombre_dia_en, nombre_dia_en)
+        labels_ventas.append(nombre_dia_es)
+        datos_ventas.append(ventas_dict.get(fecha.isoformat(), 0))
     
     # Top 5 productos
     top_productos = Producto.objects.annotate(
@@ -117,6 +146,7 @@ def dashboard_admin(request):
         # Stock
         'stock_bajo': stock_bajo,
         'total_productos': total_productos,
+        'productos_stock_bajo': productos_stock_bajo,
         # Bajas
         'bajas_pendientes': bajas_pendientes,
         'bajas_hoy': bajas_hoy,
@@ -127,6 +157,13 @@ def dashboard_admin(request):
         'labels_ventas': labels_ventas,
         'datos_ventas': datos_ventas,
         'top_productos': top_productos,
+        # Paginación gráfico
+        'chart_offset': offset,
+        'chart_offset_next': offset + 7,
+        'chart_offset_prev': max(0, offset - 7),
+        'chart_fecha_inicio': fecha_inicio.strftime('%d/%m'),
+        'chart_fecha_fin': fecha_fin.strftime('%d/%m'),
+        'chart_has_prev': offset > 0,
     }
     
     return render(request, 'dashboard_admin.html', context)
@@ -135,22 +172,60 @@ def dashboard_admin(request):
 @login_required
 
 def dashboard_vendedor(request):
-    hoy = timezone.now().date()
-    
-    ventas_hoy = Venta.objects.filter(
-        vendedor=request.user, 
-        hora__date=hoy # Nota: Cambié 'fecha' por 'hora' ya que así se llama en tu modelo
+    """
+    GET /dashboard/vendedor/
+
+    `templates/dashboard_vendedor.html` muestra el estado de caja y métricas del día.
+    Si estas keys no están en el context, la UI asume "caja cerrada" y ofrece abrir caja.
+    """
+    ahora = timezone.now()
+
+    caja = Caja.objects.filter(
+        abierta=True,
+        estado='Abierta',
+    ).order_by('-fecha', '-id').first()
+
+    caja_abierta = bool(caja and caja.abierta and caja.estado == 'Abierta')
+
+    inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
+    fin_dia = ahora.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    if caja_abierta:
+        ventas_qs = caja.ventas.filter(
+            vendedor=request.user,
+            hora__range=(inicio_dia, fin_dia),
+        )
+    else:
+        ventas_qs = Venta.objects.none()
+
+    stats = ventas_qs.aggregate(
+        total_dia=Coalesce(Sum('total'), Decimal(0), output_field=DecimalField()),
+        num_ventas=Count('id'),
+        total_efectivo=Coalesce(
+            Sum('total', filter=Q(metodo_pago='EFECTIVO')),
+            Decimal(0),
+            output_field=DecimalField(),
+        ),
+        total_transferencias=Coalesce(
+            Sum('total', filter=Q(metodo_pago='TRANSFERENCIA')),
+            Decimal(0),
+            output_field=DecimalField(),
+        ),
     )
-    
-    # IMPORTANTE: Cambia 'suma_total' por algo único
-    resultado = ventas_hoy.aggregate(valor_acumulado=Sum('total'))
-    
-    # Extraemos usando el nuevo nombre
-    total_dia = resultado['valor_acumulado'] or 0
-    
+
+    total_dia = stats['total_dia']
+    num_ventas = stats['num_ventas']
+    ticket_promedio = (total_dia / num_ventas) if num_ventas else Decimal(0)
+
     context = {
-        'total_dia': total_dia,
-        'ventas_recientes': ventas_hoy.order_by('-hora')[:5],
+        'caja_abierta': caja_abierta,
+        'hora_apertura': timezone.localtime(caja.hora_apertura).strftime('%H:%M') if caja_abierta and caja.hora_apertura else 'N/A',
+        'monto_inicial': caja.monto_inicial if caja_abierta else Decimal(0),
+        'ventas_hoy': total_dia,
+        'num_ventas': num_ventas,
+        'total_efectivo': stats['total_efectivo'],
+        'total_transferencias': stats['total_transferencias'],
+        'ticket_promedio': ticket_promedio,
     }
-    
+
     return render(request, 'dashboard_vendedor.html', context)

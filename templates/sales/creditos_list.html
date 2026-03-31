@@ -1,0 +1,460 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Créditos{% endblock %}
+
+{% block header %}
+<div class="flex items-center justify-between gap-3 pt-4 pb-1 overflow-visible">
+  <div class="flex items-center gap-3 min-w-0">
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
+      <i class="fa-solid fa-coins text-lg"></i>
+    </div>
+    
+    <div class="min-w-0 text-left">
+      <p class="text-[10px] uppercase tracking-[0.2em] text-amber-400/80 font-bold leading-none mb-1.5">Gestión</p>
+      <h2 class="text-white font-display font-black truncate text-xl leading-normal">
+        Cuentas por Cobrar
+      </h2>
+    </div>
+  </div>
+
+  <div class="hidden md:flex items-center gap-3">
+    <div class="px-4 py-2 bg-dark-800/60 backdrop-blur border border-dark-700/50 rounded-full">
+      <span class="text-xs font-medium text-gray-400">
+        <span class="text-amber-400 font-bold">${{ stats.total_pendiente|floatformat:2 }}</span>
+        <span class="text-gray-500">pendiente</span>
+      </span>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+  <!-- Estadísticas con filtros - Diseño de tarjetas apiladas -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <a href="?estado=&q={{ filtros.q }}" class="group relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div class="relative bg-dark-800/80 backdrop-blur border {% if not filtros.estado %}border-brand-500/60{% else %}border-dark-700/80 group-hover:border-brand-500/30{% endif %} rounded-xl p-4 transition-all duration-300 group-hover:translate-y-[-2px]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Total</span>
+          <div class="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center">
+            <i class="fa-solid fa-wallet text-brand-400 text-sm"></i>
+          </div>
+        </div>
+        <p class="text-2xl font-black text-white tracking-tight">{{ stats.total }}</p>
+      </div>
+    </a>
+    
+    <a href="?estado=PENDIENTE&q={{ filtros.q }}" class="group relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div class="relative bg-dark-800/80 backdrop-blur border {% if filtros.estado == 'PENDIENTE' %}border-amber-500/60{% else %}border-dark-700/80 group-hover:border-amber-500/30{% endif %} rounded-xl p-4 transition-all duration-300 group-hover:translate-y-[-2px]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Pendientes</span>
+          <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+            <i class="fa-solid fa-hourglass-start text-amber-400 text-sm"></i>
+          </div>
+        </div>
+        <p class="text-2xl font-black text-amber-400 tracking-tight">{{ stats.pendientes }}</p>
+      </div>
+    </a>
+    
+    <a href="?estado=PARCIAL&q={{ filtros.q }}" class="group relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div class="relative bg-dark-800/80 backdrop-blur border {% if filtros.estado == 'PARCIAL' %}border-blue-500/60{% else %}border-dark-700/80 group-hover:border-blue-500/30{% endif %} rounded-xl p-4 transition-all duration-300 group-hover:translate-y-[-2px]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Parciales</span>
+          <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+            <i class="fa-solid fa-chart-pie text-blue-400 text-sm"></i>
+          </div>
+        </div>
+        <p class="text-2xl font-black text-blue-400 tracking-tight">{{ stats.parciales }}</p>
+      </div>
+    </a>
+    
+    <a href="?estado=PAGADO&q={{ filtros.q }}" class="group relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div class="relative bg-dark-800/80 backdrop-blur border {% if filtros.estado == 'PAGADO' %}border-emerald-500/60{% else %}border-dark-700/80 group-hover:border-emerald-500/30{% endif %} rounded-xl p-4 transition-all duration-300 group-hover:translate-y-[-2px]">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Pagados</span>
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+            <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+          </div>
+        </div>
+        <p class="text-2xl font-black text-emerald-400 tracking-tight">{{ stats.pagados }}</p>
+      </div>
+    </a>
+  </div>
+
+  <!-- Buscador elegante -->
+  <div class="relative">
+    <form method="GET" class="flex gap-3">
+      <input type="hidden" name="estado" value="{{ filtros.estado }}">
+      <div class="relative flex-1">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <i class="fa-solid fa-magnifying-glass text-gray-500"></i>
+        </div>
+        <input
+          type="text"
+          name="q"
+          value="{{ filtros.q }}"
+          placeholder="Buscar por nombre del cliente..."
+          class="w-full bg-dark-800/60 backdrop-blur border border-dark-700/50 rounded-xl pl-11 pr-4 py-3.5 text-white placeholder:text-gray-500 focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/20 transition-all"
+        />
+        {% if filtros.q %}
+        <a href="?estado={{ filtros.estado }}" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-white transition-colors">
+          <i class="fa-solid fa-times-circle"></i>
+        </a>
+        {% endif %}
+      </div>
+      <button type="submit" class="px-6 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold transition-all hover:shadow-lg hover:shadow-brand-500/25">
+        Buscar
+      </button>
+    </form>
+  </div>
+
+  <!-- Listado de créditos - Diseño de tarjetas moderno -->
+  <div class="space-y-3">
+    {% if creditos %}
+    <div class="flex items-center justify-between px-2 py-1">
+      <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">
+        <i class="fa-solid fa-list mr-2"></i>{{ creditos.paginator.count }} crédito{{ creditos.paginator.count|pluralize:"s" }}
+      </span>
+    </div>
+    {% endif %}
+
+    {% for credito in creditos %}
+    <div class="group relative bg-dark-800/40 border border-dark-700/50 hover:border-dark-600 rounded-xl p-4 md:p-5 transition-all duration-200 hover:shadow-lg hover:shadow-black/20">
+      <div class="flex flex-col md:flex-row md:items-center gap-4">
+        <!-- Cliente -->
+        <div class="flex items-center gap-4 flex-1 min-w-0">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-lg flex-shrink-0">
+            {{ credito.cliente|slice:":1"|upper }}
+          </div>
+          <div class="min-w-0">
+            <h4 class="text-white font-bold truncate">{{ credito.cliente }}</h4>
+            <p class="text-xs text-gray-500">
+              <i class="fa-regular fa-calendar mr-1"></i>{{ credito.fecha_creacion|date:"d M" }} · 
+              <span class="text-gray-600">Venta #{{ credito.venta_id }}</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Montos -->
+        <div class="flex items-center gap-6 md:gap-8">
+          <div class="text-center">
+            <p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Total</p>
+            <p class="text-lg font-black text-white">${{ credito.monto_total|floatformat:2 }}</p>
+          </div>
+          <div class="text-center">
+            <p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Pagado</p>
+            <p class="text-lg font-black text-emerald-400">${{ credito.monto_pagado|floatformat:2 }}</p>
+          </div>
+          <div class="text-center min-w-[80px]">
+            <p class="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Saldo</p>
+            <p class="text-lg font-black {% if credito.saldo_pendiente > 0 %}text-amber-400{% else %}text-emerald-400{% endif %}">${{ credito.saldo_pendiente|floatformat:2 }}</p>
+          </div>
+        </div>
+
+        <!-- Estado -->
+        <div class="flex items-center gap-3">
+          {% if credito.estado == 'PENDIENTE' %}
+          <span class="px-3 py-1.5 bg-amber-500/10 text-amber-400 rounded-lg text-xs font-bold border border-amber-500/20">
+            <i class="fa-solid fa-circle text-[8px] mr-1.5"></i>Pendiente
+          </span>
+          {% elif credito.estado == 'PARCIAL' %}
+          <span class="px-3 py-1.5 bg-blue-500/10 text-blue-400 rounded-lg text-xs font-bold border border-blue-500/20">
+            <i class="fa-solid fa-circle text-[8px] mr-1.5"></i>Parcial
+          </span>
+          {% elif credito.estado == 'PAGADO' %}
+          <span class="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg text-xs font-bold border border-emerald-500/20">
+            <i class="fa-solid fa-check-circle text-[8px] mr-1.5"></i>Pagado
+          </span>
+          {% elif credito.estado == 'CANCELADO' %}
+          <span class="px-3 py-1.5 bg-red-500/10 text-red-400 rounded-lg text-xs font-bold border border-red-500/20">
+            <i class="fa-solid fa-xmark-circle text-[8px] mr-1.5"></i>Cancelado
+          </span>
+          {% endif %}
+        </div>
+
+        <!-- Acciones -->
+        <div class="flex items-center gap-2">
+          <a
+            href="{% url 'sales:detalle_credito' credito.id %}"
+            class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:border-blue-400 hover:bg-blue-500/20 text-blue-400 hover:text-white transition-all flex items-center justify-center"
+            title="Ver detalle"
+          >
+            <i class="fa-solid fa-eye"></i>
+          </a>
+          {% if credito.estado != 'PAGADO' and credito.estado != 'CANCELADO' %}
+          <button
+            data-credito-id="{{ credito.id }}"
+            data-cliente="{{ credito.cliente|escapejs }}"
+            data-saldo="{{ credito.saldo_pendiente|floatformat:2 }}"
+            onclick="abrirModalPago(this)"
+            class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 hover:border-emerald-400 hover:bg-emerald-500/20 text-emerald-400 hover:text-white transition-all flex items-center justify-center"
+            title="Registrar pago"
+          >
+            <i class="fa-solid fa-hand-holding-dollar"></i>
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-16 px-6">
+      <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-dark-800 border border-dark-700 mb-6">
+        <i class="fa-solid fa-inbox text-4xl text-gray-600"></i>
+      </div>
+      <h3 class="text-xl font-black text-white mb-2">Sin créditos registrados</h3>
+      <p class="text-gray-500 max-w-md mx-auto">Los créditos aparecerán aquí cuando realices ventas a crédito</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Paginación -->
+  {% if creditos.has_other_pages %}
+  <div class="flex items-center justify-between px-2">
+    <p class="text-sm text-gray-500">
+      Página <span class="text-white font-bold">{{ creditos.number }}</span> de <span class="text-white font-bold">{{ creditos.paginator.num_pages }}</span>
+    </p>
+    <div class="flex gap-2">
+      {% if creditos.has_previous %}
+      <a href="?page={{ creditos.previous_page_number }}{% if filtros.q %}&q={{ filtros.q }}{% endif %}{% if filtros.estado %}&estado={{ filtros.estado }}{% endif %}" class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-800 border border-dark-700 rounded-lg hover:bg-dark-700 hover:border-dark-600 transition-all">
+        <i class="fa-solid fa-chevron-left mr-1"></i>Anterior
+      </a>
+      {% endif %}
+      {% if creditos.has_next %}
+      <a href="?page={{ creditos.next_page_number }}{% if filtros.q %}&q={{ filtros.q }}{% endif %}{% if filtros.estado %}&estado={{ filtros.estado }}{% endif %}" class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-800 border border-dark-700 rounded-lg hover:bg-dark-700 hover:border-dark-600 transition-all">
+        Siguiente<i class="fa-solid fa-chevron-right ml-1"></i>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Modal Registrar Pago -->
+<div id="modal-pago" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="bg-dark-800 rounded-2xl border border-dark-700 w-full max-w-md shadow-2xl shadow-black/50 transform transition-all">
+    <div class="relative overflow-hidden">
+      <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500"></div>
+    </div>
+    
+    <div class="p-6 md:p-8">
+      <div class="flex items-center gap-4 mb-6">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+          <i class="fa-solid fa-dollar-sign text-xl"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-black text-white">Registrar Pago</h3>
+          <p class="text-xs text-gray-500">Cliente: <span id="pago-cliente" class="text-white font-medium"></span></p>
+        </div>
+        <button onclick="cerrarModalPago()" class="ml-auto w-8 h-8 rounded-lg bg-dark-700 hover:bg-dark-600 text-gray-400 hover:text-white transition-colors flex items-center justify-center">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <div class="space-y-5">
+        <div>
+          <label class="block text-sm font-bold text-gray-300 mb-2">Monto a pagar</label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-lg">$</span>
+            <input type="text" id="pago-monto" inputmode="decimal"
+                   class="w-full bg-dark-900 border border-dark-600 rounded-xl pl-8 pr-4 py-3.5 text-white text-lg font-bold focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                   placeholder="0.00">
+          </div>
+          <p class="text-xs text-gray-500 mt-2 flex items-center gap-2">
+            <i class="fa-solid fa-info-circle text-amber-500"></i>
+            Saldo pendiente: <span class="text-amber-400 font-bold">$<span id="pago-saldo"></span></span>
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-bold text-gray-300 mb-2">Método de pago</label>
+          <select id="pago-metodo" class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-3.5 text-white font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all appearance-none cursor-pointer">
+            <option value="EFECTIVO">💵 Efectivo</option>
+            <option value="TRANSFERENCIA">📱 Transferencia</option>
+            <option value="DEPOSITO">🏦 Depósito</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-bold text-gray-300 mb-2">Observaciones <span class="text-gray-500 font-normal">(opcional)</span></label>
+          <textarea id="pago-observaciones" rows="2"
+                    class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all resize-none"
+                    placeholder="Notas adicionales..."></textarea>
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-8">
+        <button onclick="cerrarModalPago()" class="flex-1 bg-dark-700 hover:bg-dark-600 text-white py-3.5 rounded-xl font-bold transition-all border border-dark-600">
+          Cancelar
+        </button>
+        <button onclick="confirmarPago()" class="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white py-3.5 rounded-xl font-black transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30">
+          <i class="fa-solid fa-check mr-2"></i>Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let creditoActualId = null;
+let saldoActual = 0;
+
+function abrirModalPago(btn) {
+  console.log('abrirModalPago llamado');
+  const id = btn.dataset.creditoId;
+  const cliente = btn.dataset.cliente;
+  const saldo = btn.dataset.saldo;
+  console.log('Datos:', id, cliente, saldo);
+  registrarPagoModal(id, cliente, saldo);
+}
+
+function registrarPagoModal(id, cliente, saldo) {
+  console.log('recibido - id:', id, 'cliente:', cliente, 'saldo:', saldo);
+  
+  creditoActualId = parseInt(id);
+  
+  // Parsear saldo correctamente - convertir coma a punto
+  let saldoNum = Number(saldo.replace(',', '.'));
+  saldoActual = Math.round(saldoNum * 100) / 100;
+  
+  console.log('parseado - creditoActualId:', creditoActualId, 'saldoActual:', saldoActual);
+  
+  if (isNaN(saldoActual) || saldoActual < 0) {
+    saldoActual = 0;
+  }
+  
+  // Verificar que los elementos existan
+  const clienteEl = document.getElementById('pago-cliente');
+  const saldoEl = document.getElementById('pago-saldo');
+  const montoInput = document.getElementById('pago-monto');
+  const obsInput = document.getElementById('pago-observaciones');
+  const modal = document.getElementById('modal-pago');
+  
+  if (clienteEl) clienteEl.textContent = cliente;
+  if (saldoEl) saldoEl.textContent = saldoActual.toString().replace('.', ',');
+  
+  if (montoInput) {
+    montoInput.value = '';
+    montoInput.placeholder = '0.00';
+  }
+  
+  if (obsInput) obsInput.value = '';
+  if (modal) modal.classList.remove('hidden');
+  
+  if (montoInput) setTimeout(() => montoInput.focus(), 100);
+}
+
+function cerrarModalPago() {
+  document.getElementById('modal-pago').classList.add('hidden');
+  creditoActualId = null;
+}
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+async function confirmarPago() {
+  const montoInput = document.getElementById('pago-monto');
+  let valorInput = montoInput.value.trim();
+  
+  if (!valorInput) {
+    showToast('Ingresa un monto a pagar', 'warning');
+    montoInput.focus();
+    return;
+  }
+  
+  let monto = parseFloat(valorInput.replace(',', '.'));
+  
+  if (isNaN(monto)) {
+    showToast('Ingresa un monto válido', 'warning');
+    montoInput.focus();
+    return;
+  }
+  
+  if (monto <= 0) {
+    showToast('El monto debe ser mayor a $0.00', 'warning');
+    montoInput.focus();
+    return;
+  }
+  
+  if (monto > saldoActual) {
+    showToast('El monto no puede ser mayor al saldo pendiente ($' + saldoActual.toString().replace('.', ',') + ')', 'error');
+    montoInput.focus();
+    return;
+  }
+  
+  monto = Math.round(monto * 100) / 100;
+  
+  console.log('Enviando monto:', monto, 'saldo:', saldoActual);
+  
+  const metodo = document.getElementById('pago-metodo').value;
+  const observaciones = document.getElementById('pago-observaciones').value;
+
+  try {
+    const response = await fetch(`/api/creditos/${creditoActualId}/pago/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        monto: monto,
+        metodo_pago: metodo,
+        observaciones: observaciones
+      })
+    });
+
+    const contentType = response.headers.get('content-type');
+    let data;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      console.error('Respuesta no JSON:', text.substring(0, 500));
+      showToast('Error del servidor. Intenta de nuevo.', 'error');
+      return;
+    }
+
+    if (data.success) {
+      showToast(data.mensaje || 'Pago registrado correctamente', 'success');
+      cerrarModalPago();
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      showToast(data.error || 'Error al registrar el pago', 'error');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    showToast('Error de conexión: ' + error.message, 'error');
+  }
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    cerrarModalPago();
+  }
+});
+
+document.getElementById('modal-pago').addEventListener('click', function(e) {
+  if (e.target === this) {
+    cerrarModalPago();
+  }
+});
+</script>
+{% endblock %}

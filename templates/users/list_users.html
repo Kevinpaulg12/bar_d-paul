@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Usuarios{% endblock %}
+
+{% block header %}
+<div class="flex items-center justify-between gap-3 pt-4 overflow-visible">
+  <div class="flex items-center gap-3 min-w-0">
+    <div class="w-9 h-9 rounded-xl bg-brand-500/10 border border-brand-500/20 flex-shrink-0 flex items-center justify-center text-brand-500 shadow-sm shadow-brand-500/5">
+      <i class="fa-solid fa-user-gear"></i>
+    </div>
+    
+    <div class="min-w-0 text-left">
+      <p class="text-[11px] uppercase tracking-wider text-gray-500 font-bold leading-none mb-1">Seguridad</p>
+      <h2 class="text-white font-display font-extrabold truncate leading-tight text-lg">
+        Gestión de Usuarios
+      </h2>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <span class="hidden md:inline-flex items-center gap-2 text-[10px] font-bold text-gray-500 bg-dark-800/40 border border-dark-700 rounded-lg px-3 py-2">
+      <i class="fa-solid fa-shield-check text-brand-500/50"></i>
+      {{ usuarios.count }} ACTIVOS
+    </span>
+
+    <a href="{% url 'users:crear_usuario' %}"
+       class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-500 text-white font-bold hover:bg-brand-600 transition focus-ring shadow-lg shadow-brand-500/20">
+      <i class="fa-solid fa-user-plus text-xs"></i>
+      <span class="hidden sm:inline text-[11px] uppercase tracking-wide">Nuevo Usuario</span>
+    </a>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Total Usuarios</p>
+                    <p class="text-2xl font-bold text-white">{{ total_usuarios|default:0 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-brand-500/20 flex items-center justify-center">
+                    <i class="fa-solid fa-users text-brand-500 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Administradores</p>
+                    <p class="text-2xl font-bold text-white">{{ total_admins|default:0 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
+                    <i class="fa-solid fa-user-shield text-blue-500 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Vendedores</p>
+                    <p class="text-2xl font-bold text-white">{{ total_vendedores|default:0 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center">
+                    <i class="fa-solid fa-user-tie text-purple-500 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-dark-800 rounded-xl p-5 border border-dark-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm">Usuarios Activos</p>
+                    <p class="text-2xl font-bold text-green-400">{{ usuarios_activos|default:0 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <i class="fa-solid fa-user-check text-green-500 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-dark-800 rounded-xl border border-dark-700 overflow-x-auto">
+        <table class="w-full min-w-[900px]">
+            <thead class="bg-dark-900">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Usuario</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Rol</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Tipo</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Estado</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Fecha Registro</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-dark-700">
+                {% for user in usuarios %}
+                <tr class="hover:bg-dark-700/50 transition-colors {% if not user.perfil.is_active %}opacity-50{% endif %}">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-500 to-blue-500 flex items-center justify-center text-white font-bold">
+                                {{ user.username|slice:":1"|upper }}
+                            </div>
+                            <div>
+                                <p class="font-medium text-white">{{ user.get_full_name|default:user.username }}</p>
+                                <p class="text-sm text-gray-500">@{{ user.username }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-300">{{ user.email|default:"-" }}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-3 py-1 rounded-full text-xs font-medium {% if user.perfil.rol == 'admin' %}bg-blue-500/20 text-blue-400{% else %}bg-purple-500/20 text-purple-400{% endif %}">
+                            {{ user.perfil.get_rol_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-300">
+                        {% if user.perfil.rol == 'vendedor' %}
+                            {{ user.perfil.get_tipo_vendedor_display|default:"-" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-3 py-1 rounded-full text-xs font-medium {% if user.perfil.is_active %}bg-green-500/20 text-green-400{% else %}bg-red-500/20 text-red-400{% endif %}">
+                            {% if user.perfil.is_active %}Activo{% else %}Desactivado{% endif %}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-400 text-sm">{{ user.date_joined|date:"d/m/Y" }}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            
+                            {% if user.id != request.user.id %}
+                            <label class="relative inline-flex items-center cursor-pointer transform scale-[0.6] origin-left" title="{% if user.perfil.is_active %}Desactivar{% else %}Activar{% endif %}">
+                                <input type="checkbox" onchange="toggleUsuario({{ user.id }}, this)" class="sr-only peer" {% if user.perfil.is_active %}checked{% endif %}>
+                                <div class="group peer ring-0 bg-rose-400 rounded-full outline-none duration-300 after:duration-300 w-24 h-12 shadow-md peer-checked:bg-emerald-500 peer-focus:outline-none after:content-['✖️'] after:rounded-full after:absolute after:bg-gray-50 after:outline-none after:h-10 after:w-10 after:top-1 after:left-1 after:flex after:justify-center after:items-center peer-checked:after:translate-x-12 peer-checked:after:content-['✔️'] peer-hover:after:scale-95">
+                                </div>
+                            </label>
+                            {% else %}
+                            <span class="p-2 text-gray-600" title="No puedes desactivar tu propia cuenta">
+                                <i class="fa-solid fa-lock"></i>
+                            </span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                        <i class="fa-solid fa-users text-4xl mb-3"></i>
+                        <p>No hay usuarios registrados</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+async function toggleUsuario(userId, checkboxElement) {
+    // Confirmación del usuario usando modal personalizado
+    const confirmed = await confirmAction({
+        title: 'Cambiar estado del usuario',
+        message: '¿Estás seguro de que deseas cambiar el estado de este usuario?',
+        icon: 'warning',
+        type: 'warning',
+        confirmText: 'Sí, cambiar',
+        cancelText: 'Cancelar'
+    });
+    
+    if (!confirmed) {
+        // Si cancela, revertimos el estado visual del checkbox
+        if(checkboxElement) {
+            checkboxElement.checked = !checkboxElement.checked;
+        }
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/cuentas/usuarios/${userId}/toggle/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(data.mensaje);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+            // Si hay error en el servidor, revertir el checkbox
+            if(checkboxElement) {
+                checkboxElement.checked = !checkboxElement.checked;
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al cambiar estado del usuario');
+        // Si hay error de red, revertir el checkbox
+        if(checkboxElement) {
+            checkboxElement.checked = !checkboxElement.checked;
+        }
+    }
+}
+
+// Función auxiliar para obtener el CSRF token (si no la tenías definida en base.html)
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

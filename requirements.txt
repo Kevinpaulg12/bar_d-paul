@@ -1,5 +1,9 @@
 django
 psycopg2-binary  # Si usas Supabase o PostgreSQL local
-gunicorn         # Recomendado para producción (Cloud o Local)
+gunicorn         # Recomendado para produccion (Cloud o Local)
 python-dotenv    # Para manejar las variables de entorno
-reportlab        # Para generación de PDFs
+reportlab        # Para generacion de PDFs
+openpyxl         # Para exportar Excel (XLSX)
+dj-database-url
+gunicorn
+whitenoise

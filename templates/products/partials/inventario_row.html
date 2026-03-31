@@ -1,0 +1,69 @@
+<tr class="hover:bg-dark-900/40 transition" id="producto-row-{{ p.id }}">
+  <td class="px-4 py-3 font-mono text-xs text-gray-300">{{ p.code }}</td>
+  <td class="px-4 py-3">
+    <div class="text-white font-semibold">{{ p.nombre }}</div>
+  </td>
+  <td class="px-4 py-3 text-gray-300">{{ p.categoria.nombre }}</td>
+  {% if es_admin %}
+  <td class="px-4 py-3 text-right">
+    <span class="text-gray-400">${{ p.costo_compra|floatformat:2 }}</span>
+  </td>
+  {% endif %}
+  <td class="px-4 py-3 text-right">
+    <span class="text-brand-400 font-semibold">${{ p.precio_venta|floatformat:2 }}</span>
+  </td>
+  {% if es_admin %}
+  <td class="px-4 py-3 text-right">
+    <span class="text-emerald-400 font-semibold">{{ p.margen_porcentaje }}%</span>
+  </td>
+  {% endif %}
+  <td class="px-4 py-3 text-center">
+    {% if p.stock_actual <= p.stock_minimo %}
+    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-bold">
+      <i class="fa-solid fa-triangle-exclamation text-[10px]"></i>
+      {{ p.stock_actual }}
+    </span>
+    {% else %}
+    <span class="text-white font-semibold">{{ p.stock_actual }}</span>
+    {% endif %}
+  </td>
+  <td class="px-4 py-3">
+    <div class="flex items-center gap-1 justify-end">
+      {% if es_admin %}
+      <a
+        type="button"
+        href="{% url 'products:editar_producto' p.id %}"
+        class="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/40 hover:border-blue-400 hover:bg-blue-500/30 text-blue-400 hover:text-white transition flex items-center justify-center"
+        title="Editar producto"
+      >
+        <i class="fa-solid fa-pen-to-square text-sm"></i>
+      </a>
+      <button
+        type="button"
+        class="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 hover:border-emerald-400 hover:bg-emerald-500/30 text-emerald-400 hover:text-white transition flex items-center justify-center"
+        title="Añadir/Ajustar stock"
+        onclick="abrirModalStock({{ p.id }}, '{{ p.nombre|escapejs }}', {{ p.stock_actual }}, true)"
+      >
+        <i class="fa-solid fa-plus text-sm"></i>
+      </button>
+      <button
+        type="button"
+        class="w-8 h-8 rounded-lg bg-red-500/20 border border-red-500/40 hover:border-red-400 hover:bg-red-500/30 text-red-400 hover:text-white transition flex items-center justify-center"
+        title="Eliminar producto"
+        onclick="confirmarEliminar({{ p.id }}, '{{ p.nombre|escapejs }}')"
+      >
+        <i class="fa-solid fa-trash text-sm"></i>
+      </button>
+      {% elif es_vendedor %}
+      <button
+        type="button"
+        class="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 hover:border-emerald-400 hover:bg-emerald-500/30 text-emerald-400 hover:text-white transition flex items-center justify-center"
+        title="Añadir stock"
+        onclick="abrirModalStock({{ p.id }}, '{{ p.nombre|escapejs }}', {{ p.stock_actual }}, false)"
+      >
+        <i class="fa-solid fa-plus text-sm"></i>
+      </button>
+      {% endif %}
+    </div>
+  </td>
+</tr>

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Usuario{% endblock %}
+
+{% block header %}
+<h2 class="text-xl font-bold text-white">Nuevo Usuario</h2>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-dark-800 rounded-xl border border-dark-700 p-6">
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Nombre de usuario</label>
+                    <input type="text" name="username" required
+                           class="w-full bg-dark-900 border border-dark-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Email</label>
+                    <input type="email" name="email" 
+                           class="w-full bg-dark-900 border border-dark-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Nombre</label>
+                    <input type="text" name="first_name" 
+                           class="w-full bg-dark-900 border border-dark-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Apellido</label>
+                    <input type="text" name="last_name" 
+                           class="w-full bg-dark-900 border border-dark-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Contraseña</label>
+                <input type="password" name="password" required
+                       class="w-full bg-dark-900 border border-dark-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand-500">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Rol</label>
+                <select name="rol" id="rol-select" 
+                        class="w-full bg-dark-900 border border-dark-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand-500">
+                    <option value="vendedor">Vendedor</option>
+                    <option value="admin">Administrador</option>
+                </select>
+            </div>
+
+            <div id="tipo-vendedor-field" class="hidden">
+                <label class="block text-sm font-medium text-gray-400 mb-2">Tipo de Vendedor</label>
+                <select name="tipo_vendedor" 
+                        class="w-full bg-dark-900 border border-dark-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand-500">
+                    <option value="RESPONSABLE">Vendedor Responsable</option>
+                    <option value="APOYO">Vendedor de Apoyo</option>
+                </select>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4">
+                <a href="{% url 'users:listar_usuarios' %}" 
+                   class="px-6 py-3 border border-dark-600 text-gray-300 rounded-lg hover:bg-dark-700 transition-colors">
+                    Cancelar
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-lg font-medium transition-colors">
+                    Crear Usuario
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.getElementById('rol-select').addEventListener('change', function() {
+        const tipoField = document.getElementById('tipo-vendedor-field');
+        if (this.value === 'vendedor') {
+            tipoField.classList.remove('hidden');
+        } else {
+            tipoField.classList.add('hidden');
+        }
+    });
+</script>
+{% endblock %}
