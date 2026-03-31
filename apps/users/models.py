@@ -10,12 +10,21 @@ class Perfil(models.Model):
         ('admin', 'Administrador'),
         ('vendedor', 'Vendedor'),
     )
+
+    TIPOS_VENDEDOR = (
+        ('RESPONSABLE', 'Vendedor Responsable'),
+        ('APOYO', 'Vendedor de Apoyo'),
+    )
     
     usuario = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
     rol = models.CharField(max_length=20, choices=ROLES, default='vendedor')
+    # Sub-rol dentro de "vendedor": define permisos operativos (POS vs. solo impresión/consulta).
+    tipo_vendedor = models.CharField(max_length=20, choices=TIPOS_VENDEDOR, default='RESPONSABLE')
+    is_active = models.BooleanField(default=True, verbose_name='Activo')
 
     def __str__(self):
-        return f"{self.usuario.username} - {self.rol}"
+        estado = "Activo" if self.is_active else "Desactivado"
+        return f"{self.usuario.username} - {self.rol} ({estado})"
 
 @receiver(post_save, sender=User)
 def crear_perfil_usuario(sender, instance, created, **kwargs):

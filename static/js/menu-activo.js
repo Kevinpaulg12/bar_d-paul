@@ -26,15 +26,19 @@ function activarMenuActivo() {
     const mapeoRutas = {
         '/': 'menu-dashboard',
         '/dashboard/': 'menu-dashboard',
-        '/new/': 'menu-nueva-venta',
-        '/sales/nueva/': 'menu-nueva-venta',
+        '/dashboard/admin/': 'menu-dashboard',
+        '/dashboard/vendedor/': 'menu-dashboard',
         '/sales/': 'menu-ventas-dia',
+        '/sales/nueva/': 'menu-nueva-venta',
         '/sales/cierre/': 'menu-cierre-caja',
         '/sales/reportes/': 'menu-mis-reportes',
+        '/sales/gastos/': 'menu-gastos',
+        '/productos/': 'menu-entrada-stock',
         '/productos/bajas/': 'menu-bajas-pendientes',
         '/productos/bajas/pendientes/': 'menu-bajas-pendientes',
-        '/admin/users/': 'menu-usuarios',
-        '/productos/': 'menu-entrada-stock',
+        '/productos/promociones/': 'menu-promociones',
+        '/cuentas/usuarios/': 'menu-usuarios',
+        '/admin/': 'menu-dashboard',
     };
     
     // Encontrar el elemento del menú que coincida
@@ -148,12 +152,12 @@ document.querySelectorAll('[id^="menu-"]').forEach(enlace => {
     enlace.addEventListener('click', function() {
         // Cerrar sidebar en móvil
         const sidebar = document.getElementById('sidebar');
-        if (sidebar && sidebar.classList.contains('active')) {
-            sidebar.classList.remove('active');
-            const overlay = document.getElementById('sidebar-overlay');
-            if (overlay) {
-                overlay.classList.remove('active');
-            }
+        const overlay = document.getElementById('sidebar-overlay');
+        if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
+            sidebar.classList.add('-translate-x-full');
+        }
+        if (overlay && !overlay.classList.contains('hidden')) {
+            overlay.classList.add('hidden');
         }
     });
 });

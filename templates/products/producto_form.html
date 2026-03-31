@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %}{% endblock %}
+
+{% block header %}
+<div class="flex items-center justify-between gap-4">
+  <div class="flex items-center gap-4">
+    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+      <i class="fa-solid fa-box text-lg"></i>
+    </div>
+    <div>
+      <h2 class="text-white font-display font-black text-xl">
+        {% if producto %}Editar Producto{% else %}Nuevo Producto{% endif %}
+      </h2>
+      <p class="text-xs text-gray-500">
+        {% if producto %}Modifica los datos del producto{% else %}Ingresa los datos del nuevo producto{% endif %}
+      </p>
+    </div>
+  </div>
+  <a
+    href="{% url 'products:inventario' %}"
+    class="px-4 py-2.5 rounded-xl bg-dark-800 border border-dark-700 hover:border-brand-500/50 text-sm text-white transition-all flex items-center gap-2"
+  >
+    <i class="fa-solid fa-arrow-left text-xs"></i>
+    Volver
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <div class="bg-dark-800 border border-dark-700 rounded-2xl overflow-hidden">
+    <!-- Header decorativo -->
+    <div class="relative h-2 bg-gradient-to-r from-brand-500 via-blue-500 to-brand-500"></div>
+    
+    <form method="post" class="p-6 md:p-8 space-y-8">
+      {% csrf_token %}
+      
+      <!-- Sección: Información Básica -->
+      <div>
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+            <i class="fa-solid fa-info-circle text-blue-400"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white">Información Básica</h3>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="space-y-1.5">
+            <label for="nombre" class="block text-sm font-bold text-gray-300">Nombre del producto <span class="text-red-400">*</span></label>
+            <input
+              type="text"
+              id="nombre"
+              name="nombre"
+              value="{{ producto.nombre|default:'' }}"
+              required
+              class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
+              placeholder="Ej: Shampoo anticasca"
+            />
+          </div>
+          
+          <div class="space-y-1.5">
+            <label for="code" class="block text-sm font-bold text-gray-300">Código <span class="text-red-400">*</span></label>
+            <input
+              type="text"
+              id="code"
+              name="code"
+              value="{{ producto.code|default:'' }}"
+              required
+              class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
+              placeholder="Ej: SHM-001"
+            />
+          </div>
+          
+          <div class="space-y-1.5">
+            <label for="categoria" class="block text-sm font-bold text-gray-300">Categoría <span class="text-red-400">*</span></label>
+            <select
+              id="categoria"
+              name="categoria"
+              required
+              class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all appearance-none cursor-pointer"
+            >
+              <option value="" class="text-gray-500">Selecciona una categoría</option>
+              {% for cat in categorias %}
+              <option value="{{ cat.id }}" {% if producto.categoria_id == cat.id %}selected{% endif %}>{{ cat.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Sección: Inventario -->
+      <div class="relative">
+        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-dark-600"></div></div>
+        <div class="relative flex justify-center text-sm">
+          <span class="px-4 bg-dark-800 text-gray-500 font-medium">Inventario</span>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="space-y-1.5">
+          <label for="stock_actual" class="block text-sm font-bold text-gray-300">
+            Stock inicial
+            <span class="text-gray-500 font-normal">(opcional)</span>
+          </label>
+          <input
+            type="number"
+            id="stock_actual"
+            name="stock_actual"
+            value="{{ producto.stock_actual|default:'0' }}"
+            min="0"
+            class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
+          />
+          <p class="text-xs text-gray-500">Cantidad actual en bodega</p>
+        </div>
+        
+        <div class="space-y-1.5">
+          <label for="stock_minimo" class="block text-sm font-bold text-gray-300">
+            Stock mínimo
+            <span class="text-gray-500 font-normal">(opcional)</span>
+          </label>
+          <input
+            type="number"
+            id="stock_minimo"
+            name="stock_minimo"
+            value="{{ producto.stock_minimo|default:'5' }}"
+            min="0"
+            class="w-full bg-dark-900 border border-dark-600 rounded-xl px-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
+          />
+          <p class="text-xs text-gray-500">Alerta cuando llegue a esta cantidad</p>
+        </div>
+      </div>
+      
+      <!-- Sección: Precios -->
+      <div class="relative">
+        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-dark-600"></div></div>
+        <div class="relative flex justify-center text-sm">
+          <span class="px-4 bg-dark-800 text-gray-500 font-medium">Precios</span>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="space-y-1.5">
+          <label for="costo_compra" class="block text-sm font-bold text-gray-300">
+            Costo de compra <span class="text-red-400">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</span>
+            <input
+              type="number"
+              id="costo_compra"
+              name="costo_compra"
+              value="{{ producto.costo_compra|default:'0' }}"
+              step="0.01"
+              min="0"
+              required
+              class="w-full bg-dark-900 border border-dark-600 rounded-xl pl-8 pr-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
+              placeholder="0.00"
+            />
+          </div>
+          <p class="text-xs text-gray-500">Precio al que compraste al proveedor</p>
+        </div>
+        
+        <div class="space-y-1.5">
+          <label for="precio_venta" class="block text-sm font-bold text-gray-300">
+            Precio de venta <span class="text-red-400">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">$</span>
+            <input
+              type="number"
+              id="precio_venta"
+              name="precio_venta"
+              value="{{ producto.precio_venta|default:'0' }}"
+              step="0.01"
+              min="0"
+              required
+              class="w-full bg-dark-900 border border-dark-600 rounded-xl pl-8 pr-4 py-3 text-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
+              placeholder="0.00"
+            />
+          </div>
+          <p class="text-xs text-gray-500">Precio de venta al público (PVP)</p>
+        </div>
+      </div>
+      
+      <!-- Preview de margen -->
+      <div class="bg-dark-900/50 border border-dark-600 rounded-2xl p-5">
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+            <i class="fa-solid fa-chart-line text-emerald-400"></i>
+          </div>
+          <h3 class="text-base font-bold text-white">Calculadora de Ganancia</h3>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-dark-800 rounded-xl p-4 border border-dark-700">
+            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Margen</p>
+            <p id="margen-valor" class="text-2xl font-black text-gray-400">--%</p>
+          </div>
+          <div class="bg-dark-800 rounded-xl p-4 border border-dark-700">
+            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Ganancia/unidad</p>
+            <p id="ganancia-unidad" class="text-2xl font-black text-gray-400">$--</p>
+          </div>
+          <div class="bg-dark-800 rounded-xl p-4 border border-dark-700">
+            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Rentabilidad</p>
+            <p id="rentabilidad" class="text-2xl font-black text-gray-400">--%</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Acciones -->
+      <div class="flex items-center justify-end gap-3 pt-4">
+        <a
+          href="{% url 'products:inventario' %}"
+          class="px-6 py-3 rounded-xl bg-dark-700 border border-dark-600 text-gray-300 hover:text-white hover:bg-dark-600 transition-all font-bold"
+        >
+          Cancelar
+        </a>
+        <button
+          type="submit"
+          class="px-6 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-blue-600 hover:from-brand-500 hover:to-blue-500 text-white font-bold transition-all shadow-lg shadow-brand-500/20 hover:shadow-brand-500/30"
+        >
+          <i class="fa-solid fa-floppy-disk mr-2"></i>
+          {% if producto %}Guardar cambios{% else %}Crear producto{% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const costoInput = document.getElementById('costo_compra');
+  const precioInput = document.getElementById('precio_venta');
+  const margenValor = document.getElementById('margen-valor');
+  const gananciaUnidad = document.getElementById('ganancia-unidad');
+  const rentabilidad = document.getElementById('rentabilidad');
+  
+  function calcularMargen() {
+    const costo = parseFloat(costoInput.value) || 0;
+    const precio = parseFloat(precioInput.value) || 0;
+    
+    if (costo > 0 && precio > 0) {
+      const margen = ((precio - costo) / precio * 100);
+      const ganancia = (precio - costo);
+      const rentabilidadCalc = ((precio - costo) / costo * 100);
+      
+      margenValor.textContent = margen.toFixed(1) + '%';
+      gananciaUnidad.textContent = '$' + ganancia.toFixed(2);
+      rentabilidad.textContent = rentabilidadCalc.toFixed(1) + '%';
+      
+      // Colores según el margen
+      if (margen < 0) {
+        margenValor.className = 'text-2xl font-black text-red-400';
+        gananciaUnidad.className = 'text-2xl font-black text-red-400';
+        rentabilidad.className = 'text-2xl font-black text-red-400';
+      } else if (margen < 15) {
+        margenValor.className = 'text-2xl font-black text-amber-400';
+        gananciaUnidad.className = 'text-2xl font-black text-amber-400';
+        rentabilidad.className = 'text-2xl font-black text-amber-400';
+      } else {
+        margenValor.className = 'text-2xl font-black text-emerald-400';
+        gananciaUnidad.className = 'text-2xl font-black text-emerald-400';
+        rentabilidad.className = 'text-2xl font-black text-emerald-400';
+      }
+    } else {
+      margenValor.textContent = '--%';
+      gananciaUnidad.textContent = '$--';
+      rentabilidad.textContent = '--%';
+      margenValor.className = 'text-2xl font-black text-gray-400';
+      gananciaUnidad.className = 'text-2xl font-black text-gray-400';
+      rentabilidad.className = 'text-2xl font-black text-gray-400';
+    }
+  }
+  
+  costoInput.addEventListener('input', calcularMargen);
+  precioInput.addEventListener('input', calcularMargen);
+  calcularMargen();
+});
+</script>
+{% endblock %}

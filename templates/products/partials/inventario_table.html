@@ -1,0 +1,32 @@
+<div class="overflow-x-auto">
+  <table class="min-w-full text-sm">
+    <thead class="bg-dark-900/60">
+      <tr class="text-left text-gray-300">
+        <th class="px-4 py-3 font-semibold">Código</th>
+        <th class="px-4 py-3 font-semibold">Producto</th>
+        <th class="px-4 py-3 font-semibold">Categoría</th>
+        {% if es_admin %}
+        <th class="px-4 py-3 font-semibold text-right">Costo Bar</th>
+        {% endif %}
+        <th class="px-4 py-3 font-semibold text-right">Público</th>
+        {% if es_admin %}
+        <th class="px-4 py-3 font-semibold text-right">Ganancia</th>
+        {% endif %}
+        <th class="px-4 py-3 font-semibold text-center">Stock</th>
+        <th class="px-4 py-3 font-semibold text-right">Acciones</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-dark-700">
+      {% for p in productos %}
+        {% include 'products/partials/inventario_row.html'%}
+      {% empty %}
+      <tr>
+        <td class="px-4 py-8 text-gray-400" colspan="{% if es_admin %}7{% else %}5{% endif %}">
+          No hay productos para los filtros actuales.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+

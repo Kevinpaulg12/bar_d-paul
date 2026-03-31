@@ -1,39 +1,96 @@
 {% extends 'base.html' %}
 
-{% block content %}
-<div class="py-8 px-4">
-    <div class="max-w-7xl mx-auto">
+{% block header %}
+<div class="flex items-center justify-between gap-4">
+  <div>
+    <h2 class="text-white font-display text-2xl">Bajas Pendientes</h2>
+    <p class="text-gray-400 text-sm">Gestionar solicitudes de baja de inventario</p>
+  </div>
+</div>
+{% endblock %}
 
-        <!-- Header con título -->
-        <div class="mb-8">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div>
-                    <h1 class="text-4xl font-black text-white mb-2 flex items-center gap-3">
-                        <div class="bg-red-500 p-3 rounded-xl">
-                            <i class="fa-solid fa-inbox text-2xl"></i>
-                        </div>
-                        Solicitudes de Baja
-                    </h1>
-                   
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+    <!-- Estadísticas - Clickeables -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="?estado=PENDIENTE&usuario=" class="block cursor-pointer">
+            <div class="bg-dark-800 border {% if filtro_activo == 'PENDIENTE' %}border-amber-500/50{% else %}border-dark-700 hover:border-amber-500/30{% endif %} rounded-xl p-5 transition-all hover:shadow-lg hover:shadow-amber-500/5">
+                <div class="flex items-center gap-3">
+                    <div class="bg-amber-500/10 p-3 rounded-lg">
+                        <i class="fa-solid fa-clock text-amber-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-bold">Pendientes</p>
+                        <p class="text-2xl font-black text-amber-400">{{ stats.pendientes }}</p>
+                    </div>
                 </div>
             </div>
+        </a>
+        <a href="?estado=APROBADO&usuario=" class="block cursor-pointer">
+            <div class="bg-dark-800 border {% if filtro_activo == 'APROBADO' %}border-emerald-500/50{% else %}border-dark-700 hover:border-emerald-500/30{% endif %} rounded-xl p-5 transition-all hover:shadow-lg hover:shadow-emerald-500/5">
+                <div class="flex items-center gap-3">
+                    <div class="bg-emerald-500/10 p-3 rounded-lg">
+                        <i class="fa-solid fa-check-circle text-emerald-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-bold">Aprobadas</p>
+                        <p class="text-2xl font-black text-emerald-400">{{ stats.aprobadas }}</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+        <a href="?estado=RECHAZADO&usuario=" class="block cursor-pointer">
+            <div class="bg-dark-800 border {% if filtro_activo == 'RECHAZADO' %}border-red-500/50{% else %}border-dark-700 hover:border-red-500/30{% endif %} rounded-xl p-5 transition-all hover:shadow-lg hover:shadow-red-500/5">
+                <div class="flex items-center gap-3">
+                    <div class="bg-red-500/10 p-3 rounded-lg">
+                        <i class="fa-solid fa-times-circle text-red-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-bold">Rechazadas</p>
+                        <p class="text-2xl font-black text-red-400">{{ stats.rechazadas }}</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Filtro Vendedor -->
+    <div class="bg-dark-800 border border-dark-700 rounded-xl p-4">
+        <form method="GET" class="flex flex-wrap gap-4 items-end">
+            <input type="hidden" name="estado" value="{{ filtro_activo }}">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-xs text-gray-400 uppercase font-bold mb-2">Vendedor</label>
+                <div class="flex gap-2">
+                    <select name="usuario" onchange="this.form.submit()"
+                            class="bg-dark-700 border border-dark-600 text-white text-sm rounded-lg px-3 py-2 focus:ring-brand-500 focus:border-brand-500">
+                        <option value="">Todos los vendedores</option>
+                        {% for vendedor in vendedores %}
+                        <option value="{{ vendedor.username }}" {% if filtro_usuario == vendedor.username %}selected{% endif %}>
+                            {{ vendedor.get_full_name|default:vendedor.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if filtro_usuario %}
+                    <a href="?estado={{ filtro_activo }}&usuario=" class="px-3 py-2 bg-dark-700 text-gray-400 hover:text-white rounded-lg transition-colors" title="Limpiar filtro">
+                        <i class="fa-solid fa-times"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabla de solicitudes -->
+    <div class="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden">
+        <div class="px-6 py-4 border-b border-dark-700">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-list text-red-500"></i>
+                Solicitudes
+                <span class="ml-auto text-sm font-normal text-gray-400">{{ bajas.paginator.count }} total</span>
+            </h3>
         </div>
 
-        <!-- Card de estadísticas -->
-        
-
-        <!-- Tabla de solicitudes -->
-        <div class="bg-dark-800 rounded-2xl shadow-2xl border border-dark-700 overflow-hidden">
-
-            <!-- Header de la tabla -->
-            <div class="px-6 py-5 border-b border-dark-700">
-                <h3 class="text-xl font-black text-white flex items-center gap-3">
-                    <i class="fa-solid fa-list text-red-500"></i>
-                    Solicitudes Pendientes
-                </h3>
-            </div>
-
-            {% if bajas %}
+        {% if bajas %}
             <!-- Tabla -->
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-dark-700">
@@ -59,9 +116,11 @@
                                 <i class="fa-solid fa-calendar mr-2 text-red-500"></i>
                                 Fecha
                             </th>
+                            {% if filtro_activo == 'PENDIENTE' %}
                             <th scope="col" class="px-6 py-4 text-center text-xs font-black text-gray-400 uppercase tracking-wider">
                                 Acciones
                             </th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-dark-700">
@@ -116,7 +175,9 @@
                             </td>
 
                             <!-- Acciones -->
+                            {% if filtro_activo == 'PENDIENTE' %}
                             <td class="px-6 py-5 whitespace-nowrap text-center">
+                                {% if baja.estado == 'PENDIENTE' %}
                                 <div class="flex items-center justify-center gap-2">
                                     <button onclick="aprobarBaja({{ baja.id }})" class="group inline-flex items-center gap-1 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-emerald-300 rounded-lg transition-all text-xs font-bold" title="Aprobar">
                                         <i class="fa-solid fa-check"></i>
@@ -127,7 +188,9 @@
                                         Rechazar
                                     </button>
                                 </div>
+                                {% endif %}
                             </td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -141,14 +204,36 @@
                     <div class="bg-dark-700 rounded-full p-8 mb-6">
                         <i class="fa-solid fa-check-circle text-gray-600 text-6xl"></i>
                     </div>
-                    <h3 class="text-2xl font-black text-white mb-2">¡No hay solicitudes pendientes!</h3>
-                    <p class="text-gray-500">Todas las solicitudes de baja han sido revisadas</p>
+                    <h3 class="text-2xl font-black text-white mb-2">¡No hay solicitudes!</h3>
+                    <p class="text-gray-500">No se encontraron solicitudes con los filtros seleccionados</p>
                 </div>
             </div>
             {% endif %}
 
+            <!-- Paginación -->
+            {% if bajas.has_other_pages %}
+            <div class="px-6 py-4 border-t border-dark-700 flex items-center justify-between">
+                <p class="text-sm text-gray-400">
+                    Página {{ bajas.number }} de {{ bajas.paginator.num_pages }}
+                    <span class="text-gray-600">({{ bajas.paginator.count }} solicitudes)</span>
+                </p>
+                <div class="flex gap-2">
+                    {% if bajas.has_previous %}
+                    <a href="?page={{ bajas.previous_page_number }}&estado={{ filtro_estado }}&usuario={{ filtro_usuario }}"
+                       class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded-lg hover:bg-dark-600 transition">
+                        <i class="fa-solid fa-chevron-left mr-1"></i>Anterior
+                    </a>
+                    {% endif %}
+                    {% if bajas.has_next %}
+                    <a href="?page={{ bajas.next_page_number }}&estado={{ filtro_estado }}&usuario={{ filtro_usuario }}"
+                       class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded-lg hover:bg-dark-600 transition">
+                        Siguiente<i class="fa-solid fa-chevron-right ml-1"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
-
     </div>
 </div>
 
@@ -205,9 +290,16 @@
 
     // Aprobar baja
     async function aprobarBaja(bajaId) {
-        if (!confirm('¿Está seguro de que desea APROBAR esta solicitud de baja? Se descontará el stock automáticamente.')) {
-            return;
-        }
+        const confirmed = await confirmAction({
+            title: 'Aprobar solicitud de baja',
+            message: '¿Está seguro de que desea APROBAR esta solicitud de baja? Se descontará el stock automáticamente.',
+            icon: 'warning',
+            type: 'warning',
+            confirmText: 'Sí, aprobar',
+            cancelText: 'Cancelar'
+        });
+        
+        if (!confirmed) return;
 
         try {
             const response = await fetch(`/productos/bajas/${bajaId}/aprobar/`, {
@@ -221,14 +313,14 @@
             const data = await response.json();
 
             if (response.ok && data.success) {
-                alert('✓ Baja aprobada correctamente. El stock ha sido actualizado.');
-                location.reload();
+                showToast('Baja aprobada correctamente. El stock ha sido actualizado.', 'success');
+                setTimeout(() => location.reload(), 1500);
             } else {
-                alert('❌ Error: ' + (data.error || 'No se pudo aprobar la baja'));
+                showToast(data.error || 'No se pudo aprobar la baja', 'error');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('❌ Error al procesar la solicitud');
+            showToast('Error al procesar la solicitud', 'error');
         }
     }
 
@@ -267,14 +359,14 @@
             const data = await response.json();
 
             if (response.ok && data.success) {
-                alert('✓ Baja rechazada correctamente.');
-                location.reload();
+                showToast('Baja rechazada correctamente.', 'success');
+                setTimeout(() => location.reload(), 1500);
             } else {
-                alert('❌ Error: ' + (data.error || 'No se pudo rechazar la baja'));
+                showToast(data.error || 'No se pudo rechazar la baja', 'error');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('❌ Error al procesar la solicitud');
+            showToast('Error al procesar la solicitud', 'error');
         }
     }
 
