@@ -392,7 +392,7 @@ function cargarReporteMensual(año, mes) {
       document.getElementById('num-ventas').textContent = data.num_ventas;
       
       const btnPdf = document.getElementById('btn-descargar-pdf');
-      btnPdf.href = `/sales/reporte-mensual/${año}/${mes}/pdf/`;
+      btnPdf.href = `/reporte-mensual/${año}/${mes}/pdf/`;
       
       if (data.vendedores.length === 0) {
         tablaBody.innerHTML = `
