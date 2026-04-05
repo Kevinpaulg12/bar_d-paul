@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from apps.sales.models import Caja, Venta, CierreCaja
 from apps.products.models import Producto, SolicitudBaja
 from django.db.models import Sum, Count, Q, DecimalField, F
@@ -8,6 +8,7 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 from datetime import timedelta
 from decimal import Decimal
+import calendar
 
 
 @login_required
@@ -229,3 +230,98 @@ def dashboard_vendedor(request):
     }
 
     return render(request, 'dashboard_vendedor.html', context)
+
+
+@login_required
+def api_reporte_mensual(request):
+    """
+    GET /dashboard/api/reporte-mensual/?año=2026&mes=4
+    
+    API que devuelve datos para el reporte mensual.
+    Incluye resumen general y rendimiento por vendedor activo en el mes.
+    """
+    try:
+        año = int(request.GET.get('año', timezone.now().year))
+        mes = int(request.GET.get('mes', timezone.now().month))
+    except (ValueError, TypeError):
+        año = timezone.now().year
+        mes = timezone.now().month
+    
+    inicio_mes = timezone.make_aware(timezone.datetime(año, mes, 1))
+    ultimo_dia = calendar.monthrange(año, mes)[1]
+    fin_mes = timezone.make_aware(timezone.datetime(año, mes, ultimo_dia, 23, 59, 59))
+    
+    ventas_mes = Venta.objects.filter(
+        hora__gte=inicio_mes,
+        hora__lte=fin_mes
+    ).select_related('vendedor').prefetch_related('detalles__producto')
+    
+    total_mes = sum(float(v.total) for v in ventas_mes)
+    num_ventas = ventas_mes.count()
+    
+    nombre_mes = calendar.month_name[mes]
+    
+    vendedores_data = {}
+    for venta in ventas_mes:
+        vid = venta.vendedor_id
+        if vid not in vendedores_data:
+            vendedores_data[vid] = {
+                'id': venta.vendedor_id,
+                'nombre': venta.vendedor.get_full_name() or venta.vendedor.username,
+                'num_ventas': 0,
+                'total_generado': Decimal('0'),
+                'por_metodo_pago': {
+                    'EFECTIVO': Decimal('0'),
+                    'TRANSFERENCIA': Decimal('0'),
+                    'CREDITO': Decimal('0'),
+                },
+                'productos_dict': {},
+            }
+        
+        vendedores_data[vid]['num_ventas'] += 1
+        vendedores_data[vid]['total_generado'] += venta.total
+        
+        metodo = venta.metodo_pago or 'EFECTIVO'
+        if metodo in vendedores_data[vid]['por_metodo_pago']:
+            vendedores_data[vid]['por_metodo_pago'][metodo] += venta.total
+        
+        for detalle in venta.detalles.all():
+            pid = detalle.producto_id
+            if pid not in vendedores_data[vid]['productos_dict']:
+                vendedores_data[vid]['productos_dict'][pid] = {
+                    'nombre': detalle.producto.nombre,
+                    'cantidad': 0
+                }
+            vendedores_data[vid]['productos_dict'][pid]['cantidad'] += detalle.cantidad
+    
+    vendedores_list = []
+    for vdata in vendedores_data.values():
+        productos = [
+            {'nombre': p['nombre'], 'cantidad': p['cantidad']}
+            for p in vdata['productos_dict'].values()
+        ]
+        productos.sort(key=lambda x: x['cantidad'], reverse=True)
+        
+        por_metodo = {
+            k: float(v) for k, v in vdata['por_metodo_pago'].items()
+        }
+        
+        vendedores_list.append({
+            'id': vdata['id'],
+            'nombre': vdata['nombre'],
+            'num_ventas': vdata['num_ventas'],
+            'total_generado': float(vdata['total_generado']),
+            'por_metodo_pago': por_metodo,
+            'productos': productos
+        })
+    
+    vendedores_list.sort(key=lambda x: x['total_generado'], reverse=True)
+    
+    return JsonResponse({
+        'año': año,
+        'mes': mes,
+        'nombre_mes': nombre_mes,
+        'total_mes': total_mes,
+        'num_ventas': num_ventas,
+        'vendedores': vendedores_list
+    })
