@@ -830,3 +830,121 @@ function getCookie(name) {
   }
   return cookieValue;
 }
+
+// ── MOBILE SHEET ──────────────────────────────────────
+function abrirSheetPago() {
+  if (carrito.length === 0) {
+    alert("⚠️ Agrega productos antes de cobrar.");
+    return;
+  }
+  renderizarSheetItems();
+  document.getElementById('sheet-overlay').classList.remove('hidden');
+  requestAnimationFrame(() => {
+    document.getElementById('sheet-pago').classList.remove('translate-y-full');
+  });
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarSheetPago() {
+  document.getElementById('sheet-pago').classList.add('translate-y-full');
+  document.getElementById('sheet-overlay').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function renderizarSheetItems() {
+  const cont = document.getElementById('sheet-items');
+  const total = document.getElementById('sheet-total');
+  cont.innerHTML = carrito.map(item => `
+    <div class="flex items-center justify-between py-2 border-b border-dark-700">
+      <span class="text-white text-sm font-medium truncate w-40">${item.nombre}</span>
+      <div class="flex items-center gap-3 flex-shrink-0">
+        <div class="flex items-center bg-dark-800 rounded-lg">
+          <button onclick="modificarCantidad(${item.id},-1);renderizarSheetItems()" 
+                  class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-white">−</button>
+          <span class="text-white text-sm font-bold w-6 text-center">${item.cantidad}</span>
+          <button onclick="modificarCantidad(${item.id},1);renderizarSheetItems()" 
+                  class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-white">+</button>
+        </div>
+        <span class="text-brand-400 font-bold text-sm w-14 text-right">
+          $${(item.precio * item.cantidad).toFixed(2)}
+        </span>
+      </div>
+    </div>
+  `).join('');
+  total.innerText = '$' + totalVenta.toFixed(2);
+  document.getElementById('fab-total').innerText = '$' + totalVenta.toFixed(2);
+}
+
+function seleccionarMetodo(metodo) {
+  document.querySelectorAll('.metodo-btn').forEach(btn => {
+    btn.classList.remove('border-brand-500','bg-brand-500/10');
+    btn.classList.add('border-dark-600','bg-dark-900');
+    btn.querySelector('span:last-child').classList.replace('text-brand-400','text-gray-400');
+  });
+  const activo = document.getElementById('btn-metodo-' + metodo);
+  activo.classList.add('border-brand-500','bg-brand-500/10');
+  activo.classList.remove('border-dark-600','bg-dark-900');
+  activo.querySelector('span:last-child').classList.replace('text-gray-400','text-brand-400');
+  
+  document.getElementById('sheet-campos-transferencia').classList.toggle('hidden', metodo !== 'TRANSFERENCIA');
+  document.getElementById('sheet-campos-credito').classList.toggle('hidden', metodo !== 'CREDITO');
+  document.getElementById('sheet-efectivo-wrap').classList.toggle('hidden', metodo !== 'EFECTIVO');
+  
+  // Sincronizar con el select del desktop
+  const desktopSelect = document.getElementById('metodo_pago');
+  if (desktopSelect) desktopSelect.value = metodo;
+}
+
+function calcularCambioSheet() {
+  const efectivo = parseFloat(document.getElementById('sheet-efectivo').value) || 0;
+  const cambio = Math.max(0, efectivo - totalVenta);
+  document.getElementById('sheet-cambio').innerText = '$' + cambio.toFixed(2);
+}
+
+async function confirmarVentaSheet() {
+  if (!requirePuedeVender()) return;
+  const metodoActivo = document.querySelector('.metodo-btn.border-brand-500');
+  // Detectar método seleccionado
+  const metodo = ['EFECTIVO','TRANSFERENCIA','CREDITO'].find(m => 
+    document.getElementById('btn-metodo-' + m)?.classList.contains('border-brand-500')
+  ) || 'EFECTIVO';
+  
+  // Sincronizar campos al selector/inputs del form desktop
+  const metodoInput = document.getElementById('metodo_pago');
+  if (metodoInput) metodoInput.value = metodo;
+  
+  if (metodo === 'TRANSFERENCIA') {
+    const banco = document.getElementById('sheet-banco').value;
+    const codigo = document.getElementById('sheet-codigo-ref').value;
+    document.getElementById('banco').value = banco;
+    document.getElementById('codigo_ref').value = codigo;
+  }
+  if (metodo === 'CREDITO') {
+    const n = document.getElementById('sheet-nombre').value.trim();
+    const a = document.getElementById('sheet-apellido').value.trim();
+    if (!n || !a) { alert('❌ Ingresa nombre y apellido del cliente.'); return; }
+    document.getElementById('cliente_tipo').value = 'PERSONALIZADO';
+    document.getElementById('cliente_nombre_pila').value = n;
+    document.getElementById('cliente_apellido').value = a;
+    document.getElementById('cliente_nombre').value = `${n} ${a}`;
+  }
+  if (metodo === 'EFECTIVO') {
+    const efectivo = parseFloat(document.getElementById('sheet-efectivo').value) || 0;
+    if (efectivo < totalVenta) { alert('❌ El efectivo es menor al total.'); return; }
+    document.getElementById('efectivo').value = efectivo;
+  }
+
+  cerrarSheetPago();
+  await finalizarVenta();
+}
+
+// Actualizar FAB cuando cambia el carrito
+const _actualizarInterfazOriginal = actualizarInterfaz;
+actualizarInterfaz = function() {
+  _actualizarInterfazOriginal();
+  const count = carrito.reduce((a, i) => a + i.cantidad, 0);
+  const fabCount = document.getElementById('fab-count');
+  const fabTotal = document.getElementById('fab-total');
+  if (fabCount) fabCount.innerText = count + (count === 1 ? ' producto' : ' productos');
+  if (fabTotal) fabTotal.innerText = '$' + totalVenta.toFixed(2);
+};
