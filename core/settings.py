@@ -1,6 +1,5 @@
 from pathlib import Path
 import os
-
 try:
     import dj_database_url
 except ModuleNotFoundError:
@@ -17,8 +16,15 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-7b)1)muek+03@kj_atf9$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['bar-d-paul.onrender.com', '.onrender.com', 'localhost', '127.0.0.1']# Application definition
-
+# Busca esta línea en tu archivo y modifícala así:
+ALLOWED_HOSTS = [
+    'bar-d-paul.vercel.app',    # El dominio de Vercel que da el error
+    '.vercel.app',               # Opcional: permite cualquier subdominio de vercel
+    'bar-d-paul.onrender.com', 
+    '.onrender.com', 
+    'localhost', 
+    '127.0.0.1'
+]
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

@@ -12,7 +12,6 @@
       <h2 class="text-white font-display font-extrabold truncate leading-tight text-lg">Punto de Venta</h2>
     </div>
   </div>
-
   <div class="flex items-center gap-2">
     <div class="hidden md:flex flex-col items-end px-3 py-1 border-r border-dark-700">
       <p class="text-[10px] uppercase text-gray-500 font-bold tracking-tighter">Productos</p>
@@ -46,9 +45,7 @@
   </div>
   {% endif %}
 
-  <!-- ══════════════════════════════════════════════
-       MODAL: Solicitud de Baja
-  ══════════════════════════════════════════════ -->
+  <!-- MODAL: Solicitud de Baja -->
   <div id="modalBaja" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
     <div class="bg-dark-800 p-6 rounded-2xl border border-dark-700 w-96">
       <h3 class="text-white font-bold mb-4">Solicitar Baja de Producto</h3>
@@ -57,8 +54,10 @@
           <option value="{{ p.id }}">{{ p.nombre }}</option>
         {% endfor %}
       </select>
-      <input type="number" id="baja_cantidad" placeholder="Cantidad" class="w-full bg-dark-900 text-white p-2 rounded mb-3 border-dark-600">
-      <textarea id="baja_motivo" placeholder="Motivo (Ej: Botella rota, caducado)" class="w-full bg-dark-900 text-white p-2 rounded mb-4 border-dark-600 h-24"></textarea>
+      <input type="number" id="baja_cantidad" placeholder="Cantidad"
+             class="w-full bg-dark-900 text-white p-2 rounded mb-3 border-dark-600">
+      <textarea id="baja_motivo" placeholder="Motivo (Ej: Botella rota, caducado)"
+                class="w-full bg-dark-900 text-white p-2 rounded mb-4 border-dark-600 h-24"></textarea>
       <div class="flex gap-2">
         <button onclick="enviarSolicitudBaja()" class="flex-1 bg-brand-500 text-white py-2 rounded-xl font-bold">Enviar Solicitud</button>
         <button onclick="cerrarModalBaja()" class="flex-1 bg-dark-700 text-white py-2 rounded-xl">Cancelar</button>
@@ -66,9 +65,7 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════
-       MODAL: Apertura de Caja
-  ══════════════════════════════════════════════ -->
+  <!-- MODAL: Apertura de Caja -->
   <div id="modal-abrir-caja" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
     <div class="bg-dark-800 rounded-2xl border border-dark-700 p-8 w-96 shadow-2xl">
       <div class="flex items-center gap-3 mb-4">
@@ -96,46 +93,32 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════
-       LAYOUT PRINCIPAL
-  ══════════════════════════════════════════════ -->
+  <!-- LAYOUT PRINCIPAL -->
   <div class="max-w-[1920px] mx-auto flex-1 min-h-0 w-full flex flex-col lg:flex-row gap-4 lg:gap-6">
 
-    <!-- ── Catálogo (scroll independiente) ── -->
-    <div id="pos-scroll" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-0
-                                pb-28 lg:pb-4">
-      <!-- pb-28 en móvil deja espacio para el FAB fijo -->
-
+    <!-- Catálogo -->
+    <div id="pos-scroll" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar pb-28 lg:pb-4">
       <div class="flex flex-col gap-4 lg:gap-6">
         <div class="flex-1 flex flex-col min-w-0">
 
-          <!-- Barra de búsqueda y filtros -->
+          <!-- Búsqueda y filtros -->
           <div class="bg-dark-800 p-4 sm:p-5 rounded-2xl border border-dark-700 shadow-2xl mb-6">
             <div class="flex flex-col lg:flex-row gap-4">
-
-              <!-- Búsqueda -->
               <div class="relative flex-1">
                 <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <i class="fa-solid fa-magnifying-glass text-gray-500"></i>
                 </span>
-                <input type="text"
-                       id="buscador"
-                       onkeyup="filtrarProductos()"
+                <input type="text" id="buscador" onkeyup="filtrarProductos()"
                        class="block w-full pl-11 pr-4 py-3.5 border-2 border-dark-600 rounded-xl bg-dark-900 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all font-medium"
-                       placeholder="Buscar por nombre, código o categoría..."
-                       autocomplete="off">
+                       placeholder="Buscar por nombre, código o categoría..." autocomplete="off">
               </div>
-
-              <!-- Filtros de categoría -->
               <div class="flex gap-2 overflow-x-auto pb-1 custom-scrollbar lg:max-w-md items-center">
                 <div class="flex gap-1 bg-dark-900 rounded-xl p-1 border border-dark-600 whitespace-nowrap">
-                  <button onclick="ordenarPorDemanda()"
-                          id="btn-demanda"
+                  <button onclick="ordenarPorDemanda()" id="btn-demanda"
                           class="view-btn active px-3 py-2 bg-brand-500 text-white rounded-lg text-xs font-bold transition-all">
                     <i class="fa-solid fa-fire mr-1"></i>Demanda
                   </button>
-                  <button onclick="ordenarPorCategoria()"
-                          id="btn-categoria"
+                  <button onclick="ordenarPorCategoria()" id="btn-categoria"
                           class="view-btn px-3 py-2 bg-dark-800 text-gray-400 rounded-lg text-xs font-bold hover:bg-dark-700 transition-all">
                     <i class="fa-solid fa-layer-group mr-1"></i>Categoría
                   </button>
@@ -153,8 +136,6 @@
                 {% endfor %}
               </div>
             </div>
-
-            <!-- Contador de resultados -->
             <div class="mt-4 pt-4 border-t border-dark-700 flex items-center justify-between">
               <p class="text-sm text-gray-500">
                 <span id="productos-count" class="font-bold text-white">{{ productos|length }}</span> productos disponibles
@@ -165,7 +146,7 @@
             </div>
           </div>
 
-          <!-- Sección de Promociones -->
+          <!-- Promociones -->
           {% if promociones %}
           <div class="mb-6">
             <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
@@ -176,9 +157,7 @@
               {% if promo.producto.stock_actual > 0 %}
               <button onclick="agregarPromocion({{ promo.id }}, '{{ promo.nombre|escapejs }}', {{ promo.precio_promocional|stringformat:'f' }})"
                       {% if not puede_vender %}disabled aria-disabled="true"{% endif %}
-                      data-id="{{ promo.id }}"
-                      data-nombre="{{ promo.nombre|lower }}"
-                      data-categoria="promocion"
+                      data-id="{{ promo.id }}" data-nombre="{{ promo.nombre|lower }}" data-categoria="promocion"
                       class="promo-card p-4 border-2 border-yellow-500/50 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-2xl hover:border-yellow-500 hover:from-yellow-500/20 hover:to-orange-500/20 transition-all duration-300 text-left group relative overflow-hidden {% if not puede_vender %}opacity-50 cursor-not-allowed{% endif %}">
                 <div class="absolute top-0 right-0 bg-yellow-500 text-black text-[9px] font-bold px-2.5 py-1 rounded-bl-xl">OFERTA</div>
                 <h3 class="font-bold text-white group-hover:text-yellow-400 transition-colors mb-1 line-clamp-2 text-sm min-h-[2.5rem]">{{ promo.nombre }}</h3>
@@ -186,7 +165,7 @@
                 <div class="flex justify-between items-end mt-2 pt-2 border-t border-dark-700">
                   <div>
                     <p class="text-xs text-gray-500 line-through">${{ promo.producto.precio_venta }}</p>
-                    <span class="text-xl font-black text-yellow-400 group-hover:text-yellow-300 transition-colors">${{ promo.precio_promocional }}</span>
+                    <span class="text-xl font-black text-yellow-400 group-hover:text-yellow-300">${{ promo.precio_promocional }}</span>
                   </div>
                   <span class="text-xs text-yellow-400 font-bold">
                     -{% if promo.tipo_descuento == 'PORCENTAJE' %}{{ promo.valor_descuento }}%{% else %}${{ promo.valor_descuento }}{% endif %}
@@ -199,11 +178,7 @@
           </div>
           {% endif %}
 
-          <!-- ── Grid de productos ──
-               MÓVIL: 3 columnas compactas
-               TABLET: 3 columnas normales
-               DESKTOP: 4-5 columnas
-          -->
+          <!-- Grid de productos -->
           <div id="catalogo"
                class="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 pb-4">
             {% for producto in productos %}
@@ -216,8 +191,6 @@
                     data-categoria="{{ producto.categoria.nombre|slugify }}"
                     data-demanda="{{ producto.total_vendido }}"
                     class="producto-card p-3 border-2 border-dark-700 bg-dark-800 rounded-xl hover:border-brand-500 hover:bg-gradient-to-br hover:from-dark-800 hover:to-brand-900/20 transition-all duration-300 text-left group relative overflow-hidden active:scale-95 {% if not puede_vender %}opacity-50 cursor-not-allowed hover:border-dark-700{% endif %}">
-
-              <!-- Badge categoría + stock bajo -->
               <div class="flex flex-wrap gap-1 mb-2">
                 <span class="text-[9px] uppercase tracking-wide text-brand-400 font-black px-1.5 py-0.5 bg-brand-500/10 rounded-full border border-brand-500/20 leading-none">
                   {{ producto.categoria.nombre }}
@@ -228,13 +201,9 @@
                 </span>
                 {% endif %}
               </div>
-
-              <!-- Nombre -->
               <h3 class="font-bold text-white group-hover:text-brand-400 transition-colors line-clamp-2 text-xs sm:text-sm leading-tight min-h-[2rem] mb-2">
                 {{ producto.nombre }}
               </h3>
-
-              <!-- Precio y Stock -->
               <div class="flex justify-between items-end pt-2 border-t border-dark-700/60">
                 <span class="text-base sm:text-xl font-black text-white group-hover:text-brand-400 transition-colors">
                   ${{ producto.precio_venta }}
@@ -243,8 +212,6 @@
                   {{ producto.stock_actual }}u
                 </span>
               </div>
-
-              <!-- Indicador hover -->
               <div class="absolute inset-0 border-2 border-brand-500 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
             </button>
             {% endif %}
@@ -261,14 +228,13 @@
     </div>
     <!-- /pos-scroll -->
 
+
     <!-- ══════════════════════════════════════════════
-         PANEL LATERAL DESKTOP (≥ lg)
-         Oculto en móvil, visible en desktop
+         PANEL LATERAL DESKTOP
     ══════════════════════════════════════════════ -->
     <div id="pos-ticket"
          class="hidden lg:flex pos-ticket flex-shrink-0 w-96 bg-dark-800 rounded-2xl border border-dark-700 shadow-2xl flex-col overflow-hidden">
 
-      <!-- Header ticket desktop -->
       <div class="p-4 border-b border-dark-700">
         <h2 class="text-xl font-bold text-white flex items-center gap-2">
           <i class="fa-solid fa-receipt text-brand-500"></i> Ticket de Venta
@@ -276,38 +242,53 @@
       </div>
 
       <div class="flex-1 flex flex-col min-h-0">
-        <!-- Items -->
         <div id="ticket-items" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar min-h-0">
           <p class="text-gray-500 italic text-sm text-center mt-10">No hay productos seleccionados...</p>
         </div>
 
         <!-- Formulario desktop -->
-        <div class="p-4 bg-dark-900/40 border-t border-dark-700 space-y-3">
+        <div class="p-4 bg-dark-900/40 border-t border-dark-700 space-y-3 overflow-y-auto custom-scrollbar max-h-[58vh]">
 
-          <!-- Cliente -->
+          <!-- Cliente desktop -->
           <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <label class="text-[10px] uppercase font-bold text-gray-500">Cliente</label>
-              <span id="cliente-hint" class="text-[10px] text-gray-500"></span>
+            <label class="text-[10px] uppercase font-bold text-gray-500 flex items-center gap-1.5">
+              <i class="fa-solid fa-user text-[9px]"></i> Cliente
+            </label>
+
+            <!-- Toggle Consumidor Final / Con datos -->
+            <div class="flex bg-dark-900 rounded-xl p-1 border border-dark-600 gap-1">
+              <button type="button" id="dt-btn-consumidor"
+                      onclick="dtSetCliente('CONSUMIDOR_FINAL')"
+                      class="dt-cliente-btn flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-brand-500 text-white">
+                <i class="fa-solid fa-user-slash mr-1"></i>Consumidor Final
+              </button>
+              <button type="button" id="dt-btn-personalizado"
+                      onclick="dtSetCliente('PERSONALIZADO')"
+                      class="dt-cliente-btn flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-dark-800 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-user-pen mr-1"></i>Con datos
+              </button>
             </div>
-            <input type="hidden" id="cliente_nombre" value="Consumidor Final">
-            <select id="cliente_tipo"
-                    class="w-full bg-dark-900 border border-dark-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-brand-500 outline-none">
-              <option value="CONSUMIDOR_FINAL" selected>Consumidor Final</option>
-              <option value="PERSONALIZADO">Nombre y apellido</option>
-            </select>
-            <div id="cliente_personalizado" class="hidden grid grid-cols-2 gap-2">
+
+            <!-- Campos nombre/apellido -->
+            <div id="dt-cliente-campos" class="hidden grid grid-cols-2 gap-2">
               <input type="text" id="cliente_nombre_pila" placeholder="Nombre"
+                     oninput="dtSyncClienteNombre()"
                      class="w-full bg-dark-900 border border-dark-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-brand-500 outline-none">
               <input type="text" id="cliente_apellido" placeholder="Apellido"
+                     oninput="dtSyncClienteNombre()"
                      class="w-full bg-dark-900 border border-dark-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-brand-500 outline-none">
             </div>
+
+            <!-- Hidden: valor real que lee finalizarVenta() -->
+            <input type="hidden" id="cliente_nombre" value="Consumidor Final">
+            <!-- Hidden: tipo para compatibilidad con sales.js -->
+            <input type="hidden" id="cliente_tipo" value="CONSUMIDOR_FINAL">
           </div>
 
-          <!-- Método de pago -->
+          <!-- Método de pago desktop -->
           <div class="space-y-1">
             <label class="text-[10px] uppercase font-bold text-gray-500">Método de Pago</label>
-            <select id="metodo_pago" onchange="toggleTransferencia()"
+            <select id="metodo_pago" onchange="dtOnMetodoCambio()"
                     class="w-full bg-dark-900 border border-dark-700 text-white rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-brand-500 outline-none">
               <option value="EFECTIVO">💵 Efectivo</option>
               <option value="TRANSFERENCIA">📱 Transferencia</option>
@@ -315,7 +296,15 @@
             </select>
           </div>
 
-          <!-- Campos transferencia -->
+          <!-- Aviso crédito desktop -->
+          <div id="campos_credito" class="hidden p-2.5 bg-amber-500/10 rounded-xl border border-amber-500/30">
+            <p class="text-amber-300 text-xs font-bold flex items-center gap-2">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              Crédito: nombre y apellido son obligatorios
+            </p>
+          </div>
+
+          <!-- Campos transferencia desktop -->
           <div id="campos_transferencia" class="space-y-2 p-2 bg-dark-800 rounded-lg border border-brand-500/20" style="display:none;">
             <label class="text-[10px] uppercase font-bold text-gray-500">Banco</label>
             <input type="hidden" id="banco" value="PICHINCHA">
@@ -337,13 +326,7 @@
                    class="w-full bg-dark-900 border border-dark-700 text-white rounded-md px-2 py-2 text-sm focus:ring-1 focus:ring-brand-500 outline-none">
           </div>
 
-          <!-- Aviso crédito -->
-          <div id="campos_credito" class="hidden space-y-1 p-2 bg-amber-500/10 rounded-lg border border-amber-500/30">
-            <p class="text-amber-300 text-xs font-bold">Crédito</p>
-            <p class="text-amber-200/80 text-xs">Obligatorio: nombre y apellido del cliente.</p>
-          </div>
-
-          <!-- Sección efectivo desktop -->
+          <!-- Efectivo desktop -->
           <div id="payment-section" class="hidden pt-3 space-y-3 border-t border-dark-700">
             <div class="space-y-1">
               <label class="text-[10px] uppercase font-bold text-gray-500">Efectivo recibido</label>
@@ -368,7 +351,7 @@
             </div>
           </div>
 
-          <!-- Total + Confirmar desktop -->
+          <!-- Total + Confirmar -->
           <div id="ticket-confirm-bar" class="pt-3 border-t border-dark-700">
             <div class="flex justify-between items-center mb-3">
               <span class="text-gray-400 text-sm font-bold">TOTAL:</span>
@@ -390,10 +373,7 @@
   <!-- /layout principal -->
 
 
-  <!-- ══════════════════════════════════════════════
-       MÓVIL: FAB fijo (Floating Action Button)
-       Solo visible en < lg
-  ══════════════════════════════════════════════ -->
+  <!-- MÓVIL: FAB fijo -->
   <div id="pos-fab"
        class="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-3 py-3
               pb-[calc(0.75rem+env(safe-area-inset-bottom))]
@@ -401,8 +381,7 @@
     <button onclick="abrirSheetPago()"
             {% if not puede_vender %}disabled aria-disabled="true"{% endif %}
             class="pointer-events-auto w-full bg-brand-500 rounded-2xl px-4 py-3.5
-                   flex items-center justify-between
-                   shadow-2xl shadow-brand-500/50
+                   flex items-center justify-between shadow-2xl shadow-brand-500/50
                    active:scale-95 transition-all
                    {% if not puede_vender %}opacity-50 cursor-not-allowed{% endif %}">
       <div class="flex items-center gap-3">
@@ -414,22 +393,13 @@
           <p id="fab-total" class="text-white text-xl font-black leading-tight">$0.00</p>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <span id="fab-items-badge"
-              class="hidden bg-white/20 text-white text-xs font-bold px-2 py-1 rounded-lg">
-          <!-- Ítems rápidos -->
-        </span>
-        <span class="bg-white/25 text-white text-sm font-bold px-4 py-2 rounded-xl whitespace-nowrap">
-          Cobrar <i class="fa-solid fa-arrow-right ml-1 text-xs"></i>
-        </span>
-      </div>
+      <span class="bg-white/25 text-white text-sm font-bold px-4 py-2 rounded-xl whitespace-nowrap">
+        Cobrar <i class="fa-solid fa-arrow-right ml-1 text-xs"></i>
+      </span>
     </button>
   </div>
 
-
-  <!-- ══════════════════════════════════════════════
-       MÓVIL: Overlay oscuro del sheet
-  ══════════════════════════════════════════════ -->
+  <!-- MÓVIL: Overlay -->
   <div id="sheet-overlay"
        class="lg:hidden hidden fixed inset-0 bg-black/70 z-50 backdrop-blur-sm"
        onclick="cerrarSheetPago()"></div>
@@ -443,14 +413,14 @@
               bg-dark-800 rounded-t-3xl border-t border-dark-700
               translate-y-full transition-transform duration-300 ease-out
               pb-[env(safe-area-inset-bottom)]
-              max-h-[92dvh] flex flex-col overflow-hidden">
+              max-h-[94dvh] flex flex-col overflow-hidden">
 
-    <!-- Handle deslizable -->
+    <!-- Handle -->
     <div class="flex justify-center pt-3 pb-1 flex-shrink-0">
       <div class="w-10 h-1.5 bg-dark-500 rounded-full"></div>
     </div>
 
-    <!-- Header sheet -->
+    <!-- Header -->
     <div class="px-4 pt-1 pb-3 flex items-center justify-between border-b border-dark-700 flex-shrink-0">
       <div>
         <h3 class="text-white text-lg font-bold leading-tight">Confirmar venta</h3>
@@ -462,42 +432,82 @@
       </button>
     </div>
 
-    <!-- Contenido con scroll -->
+    <!-- Scroll interno -->
     <div class="flex-1 overflow-y-auto custom-scrollbar">
 
-      <!-- Lista de ítems del carrito -->
-      <div id="sheet-items" class="px-4 pt-3 space-y-2"></div>
+      <!-- Ítems del carrito -->
+      <div id="sheet-items" class="px-4 pt-3 space-y-1"></div>
 
-      <!-- Total destacado -->
+      <!-- Total -->
       <div class="mx-4 mt-3 bg-dark-900 rounded-2xl px-4 py-3 flex justify-between items-center border border-dark-600">
         <div>
           <p class="text-gray-500 text-[10px] uppercase font-bold tracking-wider">Total a cobrar</p>
           <span id="sheet-total" class="text-brand-500 text-3xl font-black">$0.00</span>
         </div>
-        <div id="sheet-items-count" class="text-right">
+        <div class="text-right">
           <p class="text-gray-500 text-[10px] uppercase font-bold tracking-wider">Ítems</p>
-          <p class="text-white text-2xl font-black">0</p>
+          <p id="sheet-items-count" class="text-white text-2xl font-black">0</p>
         </div>
       </div>
 
-      <!-- Método de pago: botones grandes táctiles -->
+      <!-- ═══════════════════════════
+           SECCIÓN CLIENTE (sheet)
+           Efectivo/Transferencia: toggle opcional
+           Crédito: datos obligatorios (toggle oculto)
+      ════════════════════════════ -->
+      <div class="px-4 mt-4">
+        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-2">
+          <i class="fa-solid fa-user mr-1"></i>Cliente
+        </p>
+
+        <!-- Toggle: visible en efectivo/transferencia, oculto en crédito -->
+        <div id="sheet-cliente-toggle" class="flex bg-dark-900 rounded-xl p-1 border border-dark-600 gap-1 mb-2">
+          <button type="button" id="sh-btn-consumidor"
+                  onclick="shSetCliente('CONSUMIDOR_FINAL')"
+                  class="sh-cliente-btn flex-1 py-2.5 rounded-lg text-xs font-bold transition-all bg-brand-500 text-white active:scale-95">
+            <i class="fa-solid fa-user-slash mr-1"></i>Consumidor Final
+          </button>
+          <button type="button" id="sh-btn-personalizado"
+                  onclick="shSetCliente('PERSONALIZADO')"
+                  class="sh-cliente-btn flex-1 py-2.5 rounded-lg text-xs font-bold transition-all bg-dark-900 text-gray-400 hover:text-white active:scale-95">
+            <i class="fa-solid fa-user-pen mr-1"></i>Con datos
+          </button>
+        </div>
+
+        <!-- Aviso obligatorio (crédito) -->
+        <div id="sheet-cliente-credito-aviso" class="hidden mb-2 px-3 py-2.5 bg-amber-500/10 rounded-xl border border-amber-500/30">
+          <p class="text-amber-300 text-xs font-bold flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Crédito — nombre y apellido obligatorio
+          </p>
+        </div>
+
+        <!-- Campos nombre / apellido (se muestran con "Con datos" o crédito) -->
+        <div id="sheet-cliente-campos" class="hidden grid grid-cols-2 gap-2">
+          <input type="text" id="sheet-nombre" placeholder="Nombre"
+                 class="w-full bg-dark-900 border border-dark-600 text-white rounded-xl px-3 py-3 text-sm focus:ring-1 focus:ring-brand-500 outline-none">
+          <input type="text" id="sheet-apellido" placeholder="Apellido"
+                 class="w-full bg-dark-900 border border-dark-600 text-white rounded-xl px-3 py-3 text-sm focus:ring-1 focus:ring-brand-500 outline-none">
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════
+           MÉTODO DE PAGO (sheet)
+      ════════════════════════════ -->
       <div class="px-4 mt-4">
         <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-2">Método de pago</p>
         <div class="grid grid-cols-3 gap-2">
-          <button onclick="seleccionarMetodoSheet('EFECTIVO')"
-                  id="btn-sheet-EFECTIVO"
+          <button onclick="seleccionarMetodoSheet('EFECTIVO')" id="btn-sheet-EFECTIVO"
                   class="sheet-metodo-btn flex flex-col items-center gap-1.5 py-3.5 rounded-2xl border-2 border-brand-500 bg-brand-500/10 transition-all active:scale-95">
             <span class="text-2xl">💵</span>
             <span class="text-xs font-bold text-brand-400">Efectivo</span>
           </button>
-          <button onclick="seleccionarMetodoSheet('TRANSFERENCIA')"
-                  id="btn-sheet-TRANSFERENCIA"
+          <button onclick="seleccionarMetodoSheet('TRANSFERENCIA')" id="btn-sheet-TRANSFERENCIA"
                   class="sheet-metodo-btn flex flex-col items-center gap-1.5 py-3.5 rounded-2xl border-2 border-dark-600 bg-dark-900 transition-all active:scale-95">
             <span class="text-2xl">📱</span>
             <span class="text-xs font-bold text-gray-400">Transfer.</span>
           </button>
-          <button onclick="seleccionarMetodoSheet('CREDITO')"
-                  id="btn-sheet-CREDITO"
+          <button onclick="seleccionarMetodoSheet('CREDITO')" id="btn-sheet-CREDITO"
                   class="sheet-metodo-btn flex flex-col items-center gap-1.5 py-3.5 rounded-2xl border-2 border-dark-600 bg-dark-900 transition-all active:scale-95">
             <span class="text-2xl">🧾</span>
             <span class="text-xs font-bold text-gray-400">Crédito</span>
@@ -508,13 +518,9 @@
       <!-- Panel: Efectivo -->
       <div id="sheet-panel-EFECTIVO" class="px-4 mt-3">
         <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-2">Efectivo recibido</p>
-        <div class="flex gap-2 items-stretch">
-          <input type="number"
-                 id="sheet-efectivo"
-                 placeholder="0.00"
-                 step="0.01"
-                 oninput="calcularCambioSheet()"
-                 inputmode="decimal"
+        <div class="flex gap-2">
+          <input type="number" id="sheet-efectivo" placeholder="0.00" step="0.01"
+                 oninput="calcularCambioSheet()" inputmode="decimal"
                  class="flex-1 bg-dark-900 border-2 border-dark-600 focus:border-brand-500 text-white text-2xl font-bold text-center rounded-xl py-3 outline-none transition">
           <div class="bg-dark-900 border border-dark-600 rounded-xl px-4 py-3 text-center min-w-[90px] flex flex-col justify-center">
             <p class="text-[10px] text-gray-500 uppercase font-bold">Cambio</p>
@@ -524,7 +530,7 @@
       </div>
 
       <!-- Panel: Transferencia -->
-      <div id="sheet-panel-TRANSFERENCIA" class="hidden px-4 mt-3 space-y-2">
+      <div id="sheet-panel-TRANSFERENCIA" class="hidden px-4 mt-3">
         <div class="p-3 bg-dark-900 rounded-2xl border border-brand-500/20 space-y-2">
           <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Banco</p>
           <select id="sheet-banco"
@@ -541,39 +547,24 @@
                    class="w-full bg-dark-800 text-white rounded-xl px-3 py-3 text-sm border border-dark-600 outline-none">
           </div>
           <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Código / Referencia</p>
-          <input type="text"
-                 id="sheet-codigo-ref"
-                 placeholder="Ej: 1234567890"
+          <input type="text" id="sheet-codigo-ref" placeholder="Ej: 1234567890"
                  class="w-full bg-dark-800 text-white rounded-xl px-3 py-3 text-sm border border-dark-600 focus:ring-1 focus:ring-brand-500 outline-none">
         </div>
       </div>
 
-      <!-- Panel: Crédito -->
+      <!-- Panel: Crédito (solo info; los datos del cliente ya aparecen arriba) -->
       <div id="sheet-panel-CREDITO" class="hidden px-4 mt-3">
-        <div class="p-3 bg-amber-500/10 rounded-2xl border border-amber-500/30 space-y-2">
-          <p class="text-amber-300 text-xs font-bold flex items-center gap-2">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            Crédito — nombre obligatorio
-          </p>
-          <div class="grid grid-cols-2 gap-2">
-            <input type="text"
-                   id="sheet-nombre"
-                   placeholder="Nombre"
-                   class="w-full bg-dark-900 text-white rounded-xl px-3 py-3 text-sm border border-dark-600 focus:ring-1 focus:ring-amber-500 outline-none">
-            <input type="text"
-                   id="sheet-apellido"
-                   placeholder="Apellido"
-                   class="w-full bg-dark-900 text-white rounded-xl px-3 py-3 text-sm border border-dark-600 focus:ring-1 focus:ring-amber-500 outline-none">
-          </div>
+        <div class="p-4 bg-amber-500/5 rounded-2xl border border-amber-500/20 text-center">
+          <i class="fa-solid fa-clock-rotate-left text-amber-400 text-2xl mb-2"></i>
+          <p class="text-amber-200 text-xs font-bold">La venta quedará registrada como crédito pendiente de cobro.</p>
         </div>
       </div>
 
-      <!-- Espacio al fondo -->
       <div class="h-4"></div>
     </div>
-    <!-- /scroll -->
+    <!-- /scroll interno -->
 
-    <!-- Botón confirmar — siempre al fondo, fuera del scroll -->
+    <!-- Botón confirmar: siempre visible al fondo -->
     <div class="px-4 pt-3 pb-4 border-t border-dark-700 flex-shrink-0 bg-dark-800">
       <button id="sheet-confirm-btn"
               onclick="confirmarVentaSheet()"
@@ -592,22 +583,12 @@
 <!-- /pos-root -->
 
 
-<!-- ══════════════════════════════════════════════
-     ESTILOS
-══════════════════════════════════════════════ -->
 <style>
-  /* Animación de entrada al sheet */
-  #sheet-pago:not(.translate-y-full) {
-    transform: translateY(0);
-  }
-
-  /* Scrollbar personalizado */
   .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: rgba(30,41,59,0.3); border-radius: 10px; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.45); border-radius: 10px; }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.75); }
 
-  /* Clamp de texto */
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -615,42 +596,29 @@
     overflow: hidden;
   }
 
-  /* Animación de entrada para productos */
   @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(16px); }
+    from { opacity: 0; transform: translateY(14px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-  .producto-card { animation: fadeInUp 0.25s ease-out; }
+  .producto-card { animation: fadeInUp 0.22s ease-out; }
 
-  /* Efectivo: animación del payment-section desktop */
-  #payment-section.hidden { max-height:0; overflow:hidden; opacity:0; transition: max-height .4s ease-out, opacity .3s ease-out; }
-  #payment-section        { max-height:400px; opacity:1;  transition: max-height .4s ease-in,  opacity .4s ease-in; }
+  #payment-section.hidden { max-height: 0; overflow: hidden; opacity: 0; transition: max-height .4s ease-out, opacity .3s ease-out; }
+  #payment-section        { max-height: 400px; opacity: 1; transition: max-height .4s ease-in, opacity .4s ease-in; }
 
-  /* FAB: asegura que se vea sobre el contenido */
   #pos-fab { pointer-events: none; }
   #pos-fab button { pointer-events: auto; }
-
-  /* Toque: quitar tap highlight en móvil */
   button { -webkit-tap-highlight-color: transparent; }
-
-  /* Keyboard shortcut */
-  kbd { box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
 </style>
 
 
-<!-- ══════════════════════════════════════════════
-     SCRIPTS
-══════════════════════════════════════════════ -->
 <script>
   window.PUEDE_VENDER = {% if puede_vender %}true{% else %}false{% endif %};
 </script>
 <script src="{% static 'js/sales.js' %}"></script>
 
-<!-- ── Apertura de caja ── -->
+<!-- Apertura de caja -->
 <script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    await verificarCajaActiva();
-  });
+  document.addEventListener('DOMContentLoaded', async () => { await verificarCajaActiva(); });
 
   async function verificarCajaActiva() {
     try {
@@ -663,7 +631,7 @@
   async function enviarAbrirCaja() {
     const input = document.getElementById('monto-inicial');
     const monto = parseFloat(input.value);
-    if (!monto || monto < 0 || isNaN(monto)) { alert('❌ Por favor ingresa un monto válido'); input.focus(); return; }
+    if (!monto || monto < 0 || isNaN(monto)) { alert('❌ Ingresa un monto válido'); input.focus(); return; }
     try {
       const r = await fetch('{% url "sales:abrir_caja" %}', {
         method: 'POST',
@@ -682,11 +650,101 @@
   function recargarPagina() { location.reload(); }
 </script>
 
-<!-- ── Sheet de pago (móvil) ── -->
+<!-- ═══════════════════════════════════════════
+     DESKTOP: lógica de cliente + método de pago
+════════════════════════════════════════════ -->
+<script>
+  let _dtClienteTipo = 'CONSUMIDOR_FINAL';
+
+  /* Cambia el tipo de cliente en desktop */
+  function dtSetCliente(tipo) {
+    _dtClienteTipo = tipo;
+    const campos  = document.getElementById('dt-cliente-campos');
+    const btnCons = document.getElementById('dt-btn-consumidor');
+    const btnPers = document.getElementById('dt-btn-personalizado');
+    const BASE    = 'dt-cliente-btn flex-1 py-2 rounded-lg text-xs font-bold transition-all ';
+
+    if (tipo === 'PERSONALIZADO') {
+      campos.classList.remove('hidden');
+      btnCons.className = BASE + 'bg-dark-800 text-gray-400 hover:text-white';
+      btnPers.className = BASE + 'bg-brand-500 text-white';
+      document.getElementById('cliente_tipo').value = 'PERSONALIZADO';
+      setTimeout(() => document.getElementById('cliente_nombre_pila')?.focus(), 50);
+    } else {
+      campos.classList.add('hidden');
+      btnCons.className = BASE + 'bg-brand-500 text-white';
+      btnPers.className = BASE + 'bg-dark-800 text-gray-400 hover:text-white';
+      document.getElementById('cliente_tipo').value   = 'CONSUMIDOR_FINAL';
+      document.getElementById('cliente_nombre').value = 'Consumidor Final';
+    }
+    dtSyncClienteNombre();
+  }
+
+  /* Sincroniza el hidden cliente_nombre con los campos de texto */
+  function dtSyncClienteNombre() {
+    if (_dtClienteTipo !== 'PERSONALIZADO') {
+      document.getElementById('cliente_nombre').value = 'Consumidor Final';
+      return;
+    }
+    const n = (document.getElementById('cliente_nombre_pila')?.value || '').trim();
+    const a = (document.getElementById('cliente_apellido')?.value || '').trim();
+    document.getElementById('cliente_nombre').value = (`${n} ${a}`).trim() || 'Consumidor Final';
+  }
+
+  /* Se llama cuando cambia el <select> de método de pago desktop */
+  function dtOnMetodoCambio() {
+    const metodo      = document.getElementById('metodo_pago').value;
+    const creditoAv   = document.getElementById('campos_credito');
+    const transDiv    = document.getElementById('campos_transferencia');
+
+    // Mostrar/ocultar aviso crédito
+    if (metodo === 'CREDITO') {
+      creditoAv?.classList.remove('hidden');
+      // Forzar "Con datos"
+      dtSetCliente('PERSONALIZADO');
+    } else {
+      creditoAv?.classList.add('hidden');
+      // No cambiamos la elección previa del vendedor
+    }
+
+    // Mostrar/ocultar campos de transferencia
+    if (transDiv) transDiv.style.display = (metodo === 'TRANSFERENCIA') ? 'block' : 'none';
+
+    // Propagar al toggleTransferencia de sales.js si existe
+    if (typeof toggleTransferencia === 'function') toggleTransferencia();
+  }
+
+  /* Banco "otro" en desktop */
+  document.addEventListener('DOMContentLoaded', () => {
+    const bancoSel     = document.getElementById('banco_select');
+    const bancoOtroWrap = document.getElementById('banco_otro_wrap');
+    const bancoOtro    = document.getElementById('banco_otro');
+    const bancoHidden  = document.getElementById('banco');
+
+    if (bancoSel) {
+      bancoSel.addEventListener('change', () => {
+        const esOtro = bancoSel.value === 'OTRO';
+        bancoOtroWrap?.classList.toggle('hidden', !esOtro);
+        if (esOtro) { bancoOtro?.focus(); bancoHidden.value = ''; }
+        else bancoHidden.value = bancoSel.value;
+      });
+      bancoOtro?.addEventListener('input', () => {
+        bancoHidden.value = bancoOtro.value.trim();
+      });
+    }
+  });
+</script>
+
+<!-- ═══════════════════════════════════════════
+     MÓVIL: Sheet de pago
+════════════════════════════════════════════ -->
 <script>
   let _sheetMetodoActual = 'EFECTIVO';
+  /* Guardamos la elección del cliente para Efectivo/Transferencia
+     de modo que si el usuario va a Crédito y vuelve, recupera su selección */
+  let _sheetClienteTipo  = 'CONSUMIDOR_FINAL';
 
-  /* Abrir sheet */
+  /* ── Abrir sheet ── */
   function abrirSheetPago() {
     if (carrito.length === 0) { alert('⚠️ Agrega productos antes de cobrar.'); return; }
     _renderSheetItems();
@@ -695,147 +753,194 @@
       document.getElementById('sheet-pago').classList.remove('translate-y-full');
     });
     document.body.style.overflow = 'hidden';
-    // Resetear efectivo
+    // Resetear al estado inicial limpio
     document.getElementById('sheet-efectivo').value = '';
     document.getElementById('sheet-cambio').innerText = '$0.00';
+    document.getElementById('sheet-nombre').value  = '';
+    document.getElementById('sheet-apellido').value = '';
+    seleccionarMetodoSheet('EFECTIVO');
+    shSetCliente('CONSUMIDOR_FINAL');
   }
 
-  /* Cerrar sheet */
+  /* ── Cerrar sheet ── */
   function cerrarSheetPago() {
     document.getElementById('sheet-pago').classList.add('translate-y-full');
-    setTimeout(() => {
-      document.getElementById('sheet-overlay').classList.add('hidden');
-    }, 280);
+    setTimeout(() => { document.getElementById('sheet-overlay').classList.add('hidden'); }, 280);
     document.body.style.overflow = '';
   }
 
-  /* Renderizar ítems dentro del sheet */
+  /* ── Renderizar ítems del carrito ── */
   function _renderSheetItems() {
-    const cont = document.getElementById('sheet-items');
-    const totalEl = document.getElementById('sheet-total');
-    const confirmTotal = document.getElementById('sheet-confirm-total');
-    const countEl = document.getElementById('sheet-items-count').querySelector('p:last-child');
-    const subtitle = document.getElementById('sheet-subtitle');
-
+    const cont      = document.getElementById('sheet-items');
+    const totalEl   = document.getElementById('sheet-total');
+    const confirmEl = document.getElementById('sheet-confirm-total');
+    const countEl   = document.getElementById('sheet-items-count');
+    const subtitle  = document.getElementById('sheet-subtitle');
     const totalItems = carrito.reduce((a, i) => a + i.cantidad, 0);
 
     cont.innerHTML = carrito.map(item => `
-      <div class="flex items-center justify-between py-2.5 border-b border-dark-700/60 gap-2">
+      <div class="flex items-center gap-2 py-2.5 border-b border-dark-700/50">
         <span class="text-white text-sm font-medium truncate flex-1">${item.nombre}</span>
-        <div class="flex items-center gap-2 flex-shrink-0">
-          <div class="flex items-center bg-dark-900 rounded-xl border border-dark-600">
-            <button onclick="modificarCantidad(${item.id},-1);_renderSheetItems();actualizarInterfaz();"
-                    class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-red-500/20 rounded-l-xl transition text-base">−</button>
-            <span class="text-white text-sm font-bold w-7 text-center">${item.cantidad}</span>
-            <button onclick="modificarCantidad(${item.id},1);_renderSheetItems();actualizarInterfaz();"
-                    class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-brand-500/20 rounded-r-xl transition text-base">+</button>
-          </div>
-          <span class="text-brand-400 font-bold text-sm w-14 text-right">$${(item.precio * item.cantidad).toFixed(2)}</span>
-          <button onclick="eliminarProducto(${item.id});_renderSheetItems();"
-                  class="text-gray-600 hover:text-red-400 transition w-6 text-center">
-            <i class="fa-solid fa-trash-can text-xs"></i>
-          </button>
+        <div class="flex items-center bg-dark-900 rounded-xl border border-dark-600 flex-shrink-0">
+          <button onclick="modificarCantidad(${item.id},-1);_renderSheetItems();actualizarInterfaz();"
+                  class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-red-500/20 rounded-l-xl transition text-base">−</button>
+          <span class="text-white text-sm font-bold w-7 text-center">${item.cantidad}</span>
+          <button onclick="modificarCantidad(${item.id},1);_renderSheetItems();actualizarInterfaz();"
+                  class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-brand-500/20 rounded-r-xl transition text-base">+</button>
         </div>
+        <span class="text-brand-400 font-bold text-sm w-14 text-right flex-shrink-0">$${(item.precio * item.cantidad).toFixed(2)}</span>
+        <button onclick="eliminarProducto(${item.id});_renderSheetItems();"
+                class="text-gray-600 hover:text-red-400 transition flex-shrink-0 pl-1">
+          <i class="fa-solid fa-trash-can text-xs"></i>
+        </button>
       </div>
     `).join('');
 
-    totalEl.innerText = '$' + totalVenta.toFixed(2);
-    confirmTotal.innerText = '$' + totalVenta.toFixed(2);
-    if (countEl) countEl.innerText = String(totalItems);
-    if (subtitle) subtitle.innerText = `${carrito.length} producto${carrito.length !== 1 ? 's' : ''}, ${totalItems} unidad${totalItems !== 1 ? 'es' : ''}`;
+    const t = '$' + totalVenta.toFixed(2);
+    if (totalEl)   totalEl.innerText   = t;
+    if (confirmEl) confirmEl.innerText = t;
+    if (countEl)   countEl.innerText   = String(totalItems);
+    if (subtitle)  subtitle.innerText  = `${carrito.length} producto${carrito.length !== 1 ? 's' : ''}, ${totalItems} unidad${totalItems !== 1 ? 'es' : ''}`;
   }
 
-  /* Seleccionar método de pago en el sheet */
+  /* ── Seleccionar método de pago ──
+     CREDITO → ocultar toggle, mostrar aviso, forzar "Con datos"
+     EFECTIVO / TRANSFERENCIA → mostrar toggle, restaurar elección previa
+  */
   function seleccionarMetodoSheet(metodo) {
     _sheetMetodoActual = metodo;
+    const METODOS = ['EFECTIVO','TRANSFERENCIA','CREDITO'];
 
-    // Reset todos los botones
-    ['EFECTIVO','TRANSFERENCIA','CREDITO'].forEach(m => {
+    // Reset todos los botones de método
+    METODOS.forEach(m => {
       const btn = document.getElementById('btn-sheet-' + m);
       const lbl = btn?.querySelector('span:last-child');
       btn?.classList.remove('border-brand-500','bg-brand-500/10');
       btn?.classList.add('border-dark-600','bg-dark-900');
       if (lbl) { lbl.classList.remove('text-brand-400'); lbl.classList.add('text-gray-400'); }
-      const panel = document.getElementById('sheet-panel-' + m);
-      if (panel) panel.classList.add('hidden');
+      document.getElementById('sheet-panel-' + m)?.classList.add('hidden');
     });
 
-    // Activar seleccionado
+    // Activar el seleccionado
     const actBtn = document.getElementById('btn-sheet-' + metodo);
     const actLbl = actBtn?.querySelector('span:last-child');
     actBtn?.classList.add('border-brand-500','bg-brand-500/10');
     actBtn?.classList.remove('border-dark-600','bg-dark-900');
     if (actLbl) { actLbl.classList.add('text-brand-400'); actLbl.classList.remove('text-gray-400'); }
-    const actPanel = document.getElementById('sheet-panel-' + metodo);
-    if (actPanel) actPanel.classList.remove('hidden');
+    document.getElementById('sheet-panel-' + metodo)?.classList.remove('hidden');
 
-    // Sincronizar con el select desktop
-    const desktopSelect = document.getElementById('metodo_pago');
-    if (desktopSelect) { desktopSelect.value = metodo; toggleTransferencia(); }
+    const toggle = document.getElementById('sheet-cliente-toggle');
+    const aviso  = document.getElementById('sheet-cliente-credito-aviso');
 
-    // Foco útil
-    setTimeout(() => {
-      if (metodo === 'EFECTIVO') document.getElementById('sheet-efectivo')?.focus();
-      if (metodo === 'TRANSFERENCIA') document.getElementById('sheet-codigo-ref')?.focus();
-      if (metodo === 'CREDITO') document.getElementById('sheet-nombre')?.focus();
-    }, 80);
+    if (metodo === 'CREDITO') {
+      // Ocultar toggle de cliente, mostrar aviso, forzar datos
+      toggle?.classList.add('hidden');
+      aviso?.classList.remove('hidden');
+      shSetCliente('PERSONALIZADO', /* forzado */ true);
+      setTimeout(() => document.getElementById('sheet-nombre')?.focus(), 80);
+    } else {
+      // Mostrar toggle, ocultar aviso, restaurar elección previa
+      toggle?.classList.remove('hidden');
+      aviso?.classList.add('hidden');
+      shSetCliente(_sheetClienteTipo);
+      if (metodo === 'EFECTIVO')       setTimeout(() => document.getElementById('sheet-efectivo')?.focus(), 80);
+      if (metodo === 'TRANSFERENCIA')  setTimeout(() => document.getElementById('sheet-codigo-ref')?.focus(), 80);
+    }
+
+    // Sincronizar select desktop
+    const dSel = document.getElementById('metodo_pago');
+    if (dSel) dSel.value = metodo;
   }
 
-  /* Calcular cambio en el sheet */
+  /* ── Tipo de cliente en sheet ──
+     forzado=true: se llama internamente (crédito), no modifica _sheetClienteTipo
+                   para recordar la preferencia al volver a efectivo/transferencia
+  */
+  function shSetCliente(tipo, forzado = false) {
+    if (!forzado) _sheetClienteTipo = tipo;
+
+    const campos  = document.getElementById('sheet-cliente-campos');
+    const btnCons = document.getElementById('sh-btn-consumidor');
+    const btnPers = document.getElementById('sh-btn-personalizado');
+    const BASE = 'sh-cliente-btn flex-1 py-2.5 rounded-lg text-xs font-bold transition-all active:scale-95 ';
+
+    if (tipo === 'PERSONALIZADO') {
+      campos?.classList.remove('hidden');
+      if (btnCons) btnCons.className = BASE + 'bg-dark-900 text-gray-400';
+      if (btnPers) btnPers.className = BASE + 'bg-brand-500 text-white';
+    } else {
+      campos?.classList.add('hidden');
+      if (btnCons) btnCons.className = BASE + 'bg-brand-500 text-white';
+      if (btnPers) btnPers.className = BASE + 'bg-dark-900 text-gray-400';
+    }
+  }
+
+  /* ── Calcular cambio ── */
   function calcularCambioSheet() {
-    const efectivo = parseFloat(document.getElementById('sheet-efectivo').value) || 0;
-    const cambio = Math.max(0, efectivo - totalVenta);
-    document.getElementById('sheet-cambio').innerText = '$' + cambio.toFixed(2);
+    const ef = parseFloat(document.getElementById('sheet-efectivo').value) || 0;
+    document.getElementById('sheet-cambio').innerText = '$' + Math.max(0, ef - totalVenta).toFixed(2);
   }
 
-  /* Confirmar venta desde el sheet */
+  /* ── Confirmar venta ── */
   async function confirmarVentaSheet() {
     if (!requirePuedeVender()) return;
     if (carrito.length === 0) { alert('⚠️ El carrito está vacío.'); return; }
 
     const metodo = _sheetMetodoActual;
+    // En crédito siempre forzamos personalizado; en otros, lo que eligió el usuario
+    const tipoCliente = (metodo === 'CREDITO') ? 'PERSONALIZADO' : _sheetClienteTipo;
 
-    // Sincronizar método con el form desktop
+    /* ── Validar y sincronizar cliente ── */
+    if (tipoCliente === 'PERSONALIZADO') {
+      const n = (document.getElementById('sheet-nombre')?.value || '').trim();
+      const a = (document.getElementById('sheet-apellido')?.value || '').trim();
+      if (!n || !a) {
+        alert(metodo === 'CREDITO'
+          ? '❌ Crédito requiere nombre y apellido del cliente.'
+          : '❌ Ingresa nombre y apellido del cliente.');
+        document.getElementById('sheet-nombre')?.focus();
+        return;
+      }
+      document.getElementById('cliente_tipo').value        = 'PERSONALIZADO';
+      document.getElementById('cliente_nombre_pila').value = n;
+      document.getElementById('cliente_apellido').value    = a;
+      document.getElementById('cliente_nombre').value      = `${n} ${a}`;
+    } else {
+      document.getElementById('cliente_tipo').value   = 'CONSUMIDOR_FINAL';
+      document.getElementById('cliente_nombre').value = 'Consumidor Final';
+    }
+
+    /* ── Sincronizar método ── */
     const metodoInput = document.getElementById('metodo_pago');
     if (metodoInput) metodoInput.value = metodo;
 
+    /* ── Validar transferencia ── */
     if (metodo === 'TRANSFERENCIA') {
-      const banco = document.getElementById('sheet-banco')?.value || '';
-      const codigo = document.getElementById('sheet-codigo-ref')?.value?.trim() || '';
-      if (!banco || !codigo) { alert('❌ Ingresa el banco y el código de comprobante.'); return; }
-      // Banco personalizado
+      const banco  = document.getElementById('sheet-banco')?.value || '';
+      const codigo = (document.getElementById('sheet-codigo-ref')?.value || '').trim();
+      if (!codigo) { alert('❌ Ingresa el código de comprobante.'); document.getElementById('sheet-codigo-ref')?.focus(); return; }
       if (banco === 'OTRO') {
-        const otroBanco = document.getElementById('sheet-banco-otro')?.value?.trim() || '';
-        if (!otroBanco) { alert('❌ Escribe el nombre del banco.'); return; }
-        document.getElementById('banco').value = otroBanco;
+        const otro = (document.getElementById('sheet-banco-otro')?.value || '').trim();
+        if (!otro) { alert('❌ Escribe el nombre del banco.'); document.getElementById('sheet-banco-otro')?.focus(); return; }
+        document.getElementById('banco').value = otro;
       } else {
         document.getElementById('banco').value = banco;
       }
       document.getElementById('codigo_ref').value = codigo;
     }
 
-    if (metodo === 'CREDITO') {
-      const n = (document.getElementById('sheet-nombre')?.value || '').trim();
-      const a = (document.getElementById('sheet-apellido')?.value || '').trim();
-      if (!n || !a) { alert('❌ Ingresa nombre y apellido del cliente.'); return; }
-      document.getElementById('cliente_tipo').value = 'PERSONALIZADO';
-      document.getElementById('cliente_nombre_pila').value = n;
-      document.getElementById('cliente_apellido').value = a;
-      document.getElementById('cliente_nombre').value = `${n} ${a}`;
-    }
-
+    /* ── Validar efectivo ── */
     if (metodo === 'EFECTIVO') {
-      const efectivo = parseFloat(document.getElementById('sheet-efectivo').value) || 0;
-      if (efectivo < totalVenta) { alert('❌ El efectivo recibido es menor al total.'); return; }
-      document.getElementById('efectivo').value = efectivo;
+      const ef = parseFloat(document.getElementById('sheet-efectivo').value) || 0;
+      if (ef < totalVenta) { alert('❌ El efectivo recibido es menor al total.'); document.getElementById('sheet-efectivo')?.focus(); return; }
+      document.getElementById('efectivo').value = ef;
     }
 
     cerrarSheetPago();
     await finalizarVenta();
   }
 
-  /* Actualizar el FAB cada vez que cambia el carrito.
-     Envolvemos actualizarInterfaz() después de que sales.js la define. */
+  /* ── Actualizar FAB cuando el carrito cambia ── */
   document.addEventListener('DOMContentLoaded', () => {
     const _orig = window.actualizarInterfaz;
     window.actualizarInterfaz = function() {
@@ -845,37 +950,36 @@
   });
 
   function _actualizarFab() {
-    const count = (typeof carrito !== 'undefined') ? carrito.reduce((a, i) => a + i.cantidad, 0) : 0;
+    const count = (typeof carrito !== 'undefined') ? carrito.reduce((a,i) => a + i.cantidad, 0) : 0;
     const total = (typeof totalVenta !== 'undefined') ? totalVenta : 0;
-    const fabCount = document.getElementById('fab-count');
-    const fabTotal = document.getElementById('fab-total');
-    const confirmTotal = document.getElementById('sheet-confirm-total');
-    if (fabCount) fabCount.innerText = count + (count === 1 ? ' producto' : ' productos');
-    if (fabTotal) fabTotal.innerText = '$' + total.toFixed(2);
-    if (confirmTotal) confirmTotal.innerText = '$' + total.toFixed(2);
+    const t = '$' + total.toFixed(2);
+    const el = id => document.getElementById(id);
+    if (el('fab-count'))           el('fab-count').innerText           = count + (count === 1 ? ' producto' : ' productos');
+    if (el('fab-total'))           el('fab-total').innerText           = t;
+    if (el('sheet-confirm-total')) el('sheet-confirm-total').innerText = t;
+    if (el('sheet-total'))         el('sheet-total').innerText         = t;
   }
 
-  /* Banco "Otro" en sheet */
+  /* ── Banco "Otro" en sheet ── */
   document.addEventListener('DOMContentLoaded', () => {
-    const sheetBanco = document.getElementById('sheet-banco');
-    const sheetOtroWrap = document.getElementById('sheet-banco-otro-wrap');
-    if (sheetBanco && sheetOtroWrap) {
-      sheetBanco.addEventListener('change', () => {
-        sheetOtroWrap.classList.toggle('hidden', sheetBanco.value !== 'OTRO');
-        if (sheetBanco.value === 'OTRO') document.getElementById('sheet-banco-otro')?.focus();
+    const sb  = document.getElementById('sheet-banco');
+    const sow = document.getElementById('sheet-banco-otro-wrap');
+    if (sb && sow) {
+      sb.addEventListener('change', () => {
+        sow.classList.toggle('hidden', sb.value !== 'OTRO');
+        if (sb.value === 'OTRO') document.getElementById('sheet-banco-otro')?.focus();
       });
     }
   });
 </script>
 
-<!-- ── Atajos de teclado ── -->
+<!-- Atajos de teclado -->
 <script>
-  document.addEventListener('keydown', function(e) {
+  document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
       e.preventDefault();
       document.getElementById('buscador')?.focus();
     }
-    // ESC cierra el sheet si está abierto
     if (e.key === 'Escape') {
       const sheet = document.getElementById('sheet-pago');
       if (sheet && !sheet.classList.contains('translate-y-full')) cerrarSheetPago();
