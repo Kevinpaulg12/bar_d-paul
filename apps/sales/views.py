@@ -1894,3 +1894,282 @@ def historial_cierres(request):
         'cierres': page_obj,
         'stats': stats,
     })
+
+
+# ==================== REPORTE MENSUAL PDF ====================
+
+import calendar as cal_module
+
+@solo_administrador
+def reporte_mensual_pdf(request, año, mes):
+    """
+    GET /sales/reporte-mensual/<año>/<mes>/pdf/
+    
+    Genera un PDF detallado del reporte mensual de ventas.
+    Incluye:
+    - Resumen general del mes
+    - Rendimiento por vendedor (con desglose por método de pago)
+    - Productos vendidos por vendedor
+    """
+    try:
+        año = int(año)
+        mes = int(mes)
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Parámetros inválidos'}, status=400)
+    
+    inicio_mes = timezone.make_aware(timezone.datetime(año, mes, 1))
+    ultimo_dia = cal_module.monthrange(año, mes)[1]
+    fin_mes = timezone.make_aware(timezone.datetime(año, mes, ultimo_dia, 23, 59, 59))
+    
+    ventas_mes = Venta.objects.filter(
+        hora__gte=inicio_mes,
+        hora__lte=fin_mes
+    ).select_related('vendedor').prefetch_related('detalles__producto')
+    
+    total_mes = sum(float(v.total) for v in ventas_mes)
+    num_ventas = ventas_mes.count()
+    
+    nombre_mes = cal_module.month_name[mes]
+    
+    vendedores_data = {}
+    for venta in ventas_mes:
+        vid = venta.vendedor_id
+        if vid not in vendedores_data:
+            vendedores_data[vid] = {
+                'id': venta.vendedor_id,
+                'nombre': venta.vendedor.get_full_name() or venta.vendedor.username,
+                'num_ventas': 0,
+                'total_generado': Decimal('0'),
+                'por_metodo_pago': {
+                    'EFECTIVO': Decimal('0'),
+                    'TRANSFERENCIA': Decimal('0'),
+                    'CREDITO': Decimal('0'),
+                },
+                'productos_dict': {},
+            }
+        
+        vendedores_data[vid]['num_ventas'] += 1
+        vendedores_data[vid]['total_generado'] += venta.total
+        
+        metodo = venta.metodo_pago or 'EFECTIVO'
+        if metodo in vendedores_data[vid]['por_metodo_pago']:
+            vendedores_data[vid]['por_metodo_pago'][metodo] += venta.total
+        
+        for detalle in venta.detalles.all():
+            pid = detalle.producto_id
+            if pid not in vendedores_data[vid]['productos_dict']:
+                vendedores_data[vid]['productos_dict'][pid] = {
+                    'nombre': detalle.producto.nombre,
+                    'cantidad': 0
+                }
+            vendedores_data[vid]['productos_dict'][pid]['cantidad'] += detalle.cantidad
+    
+    vendedores_list = []
+    for vdata in vendedores_data.values():
+        productos = [
+            {'nombre': p['nombre'], 'cantidad': p['cantidad']}
+            for p in vdata['productos_dict'].values()
+        ]
+        productos.sort(key=lambda x: x['cantidad'], reverse=True)
+        
+        por_metodo = {
+            k: float(v) for k, v in vdata['por_metodo_pago'].items()
+        }
+        
+        vendedores_list.append({
+            'id': vdata['id'],
+            'nombre': vdata['nombre'],
+            'num_ventas': vdata['num_ventas'],
+            'total_generado': float(vdata['total_generado']),
+            'por_metodo_pago': por_metodo,
+            'productos': productos
+        })
+    
+    vendedores_list.sort(key=lambda x: x['total_generado'], reverse=True)
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=0.5*inch,
+        leftMargin=0.5*inch,
+        topMargin=0.5*inch,
+        bottomMargin=0.5*inch
+    )
+    
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        textColor=colors.HexColor('#22c55e'),
+        spaceAfter=4,
+        alignment=1,
+        fontName='Helvetica-Bold'
+    )
+    
+    subtitle_style = ParagraphStyle(
+        'Subtitle',
+        parent=styles['Normal'],
+        fontSize=12,
+        textColor=colors.HexColor('#666666'),
+        spaceAfter=10,
+        alignment=1,
+        fontName='Helvetica'
+    )
+    
+    section_style = ParagraphStyle(
+        'SectionTitle',
+        parent=styles['Heading2'],
+        fontSize=12,
+        textColor=colors.HexColor('#1e293b'),
+        spaceAfter=6,
+        spaceBefore=10,
+        fontName='Helvetica-Bold'
+    )
+    
+    vendedor_style = ParagraphStyle(
+        'VendedorTitle',
+        parent=styles['Heading3'],
+        fontSize=11,
+        textColor=colors.HexColor('#22c55e'),
+        spaceAfter=4,
+        spaceBefore=8,
+        fontName='Helvetica-Bold'
+    )
+    
+    normal_style = ParagraphStyle(
+        'NormalText',
+        parent=styles['Normal'],
+        fontSize=9,
+        textColor=colors.HexColor('#333333'),
+        fontName='Helvetica'
+    )
+    
+    elements.append(Paragraph("BAR D'PAUL", title_style))
+    elements.append(Paragraph("Reporte Mensual de Ventas", subtitle_style))
+    elements.append(Paragraph(f"Período: {nombre_mes} {año}", subtitle_style))
+    elements.append(Spacer(1, 0.1*inch))
+    
+    elements.append(Paragraph("RESUMEN GENERAL", section_style))
+    
+    resumen_data = [
+        ['Total del Mes', f"${total_mes:,.2f}"],
+        ['Número de Ventas', str(num_ventas)],
+        ['Vendedores Activos', str(len(vendedores_list))],
+    ]
+    
+    resumen_table = Table(resumen_data, colWidths=[2*inch, 2*inch])
+    resumen_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f0f0f0')),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+    ]))
+    elements.append(resumen_table)
+    elements.append(Spacer(1, 0.2*inch))
+    
+    for vendedor in vendedores_list:
+        elements.append(Paragraph(f"VENDEDOR: {vendedor['nombre'].upper()}", vendedor_style))
+        
+        vendedor_info = [
+            [f"Total Generado: ${vendedor['total_generado']:,.2f}", f"Ventas: {vendedor['num_ventas']}"]
+        ]
+        info_table = Table(vendedor_info, colWidths=[2.5*inch, 2.5*inch])
+        info_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#e8f5e9')),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(info_table)
+        elements.append(Spacer(1, 0.1*inch))
+        
+        elements.append(Paragraph("Desglose por Método de Pago:", normal_style))
+        metodos_list = []
+        por_metodo = vendedor['por_metodo_pago']
+        for metodo, monto in por_metodo.items():
+            if monto > 0:
+                metodo_nombre = {
+                    'EFECTIVO': 'Efectivo',
+                    'TRANSFERENCIA': 'Transferencia',
+                    'CREDITO': 'Crédito'
+                }.get(metodo, metodo)
+                metodos_list.append(f"  • {metodo_nombre}: ${monto:,.2f}")
+        
+        if metodos_list:
+            for metodo_text in metodos_list:
+                elements.append(Paragraph(metodo_text, normal_style))
+        else:
+            elements.append(Paragraph("  Sin ventas registradas", normal_style))
+        
+        elements.append(Spacer(1, 0.1*inch))
+        elements.append(Paragraph("Productos Vendidos:", normal_style))
+        
+        productos_data = [['Producto', 'Cantidad']]
+        for producto in vendedor['productos']:
+            productos_data.append([
+                producto['nombre'][:40],
+                str(producto['cantidad'])
+            ])
+        
+        productos_table = Table(productos_data, colWidths=[4*inch, 1*inch])
+        productos_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#22c55e')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+            ('TOPPADDING', (0, 0), (-1, -1), 5),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('ALIGN', (1, 0), (1, -1), 'CENTER'),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9f9f9')]),
+        ]))
+        elements.append(productos_table)
+        elements.append(Spacer(1, 0.15*inch))
+        
+        subtotal_para = Paragraph(
+            f"Subtotal {vendedor['nombre']}: ${vendedor['total_generado']:,.2f}",
+            ParagraphStyle('Subtotal', parent=styles['Normal'], fontSize=10, fontName='Helvetica-Bold', alignment=2)
+        )
+        elements.append(subtotal_para)
+        elements.append(Spacer(1, 0.2*inch))
+    
+    elements.append(Spacer(1, 0.1*inch))
+    elements.append(Paragraph("_" * 80, normal_style))
+    
+    total_style = ParagraphStyle(
+        'TotalGeneral',
+        parent=styles['Normal'],
+        fontSize=14,
+        fontName='Helvetica-Bold',
+        textColor=colors.HexColor('#22c55e'),
+        alignment=1
+    )
+    elements.append(Paragraph(f"TOTAL GENERAL DEL MES: ${total_mes:,.2f}", total_style))
+    
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.HexColor('#999999'),
+        alignment=1
+    )
+    elements.append(Spacer(1, 0.3*inch))
+    elements.append(Paragraph(
+        f"Documento generado el {timezone.now().strftime('%d/%m/%Y %H:%M:%S')} | Sistema de Gestión | BAR D'PAUL",
+        footer_style
+    ))
+    
+    doc.build(elements)
+    
+    buffer.seek(0)
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="reporte_mensual_{nombre_mes}_{año}.pdf"'
+    return response

@@ -18,6 +18,18 @@ class LoginView(auth_views.LoginView):
 
     def get_success_url(self):
         return reverse_lazy('dashboard:panel')
+
+    def form_valid(self, form):
+        user = form.get_user()
+
+        # Bloquear login si el perfil está desactivado (Perfil.is_active).
+        # Django por defecto valida User.is_active, pero aquí el estado vive en Perfil.
+        perfil = getattr(user, 'perfil', None)
+        if perfil is not None and not perfil.is_active:
+            form.add_error(None, 'Tu cuenta ha sido desactivada. Contacta al administrador.')
+            return self.form_invalid(form)
+
+        return super().form_valid(form)
     
     def form_invalid(self, form):
         # Verificar si el usuario existe pero está desactivado

@@ -26,6 +26,9 @@ urlpatterns = [
     # Reportes
     path('reportes/', views.mis_reportes, name='mis_reportes'),
 
+    # Reporte Mensual PDF
+    path('reporte-mensual/<int:año>/<int:mes>/pdf/', views.reporte_mensual_pdf, name='reporte_mensual_pdf'),
+
     # APIs para Dashboard
     path('api/dashboard/stats/', views.api_dashboard_admin, name='api_dashboard'),
 

@@ -252,16 +252,192 @@
       </div>
     </div>
 
-    <div class="bg-dark-900 border border-dark-700 rounded-xl p-5 shadow-inner">
+    <div class="bg-dark-900 border border-dark-700 rounded-xl p-5 shadow-inner hover:border-purple-500/50 transition-all cursor-pointer" onclick="abrirModalReporteMensual()">
       <div class="flex items-center gap-2 mb-4 border-b border-dark-700 pb-3">
         <i class="fa-solid fa-chart-pie text-purple-500"></i>
         <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Mensual</h4>
       </div>
       <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Volumen de Ventas</p>
       <p class="text-3xl font-black text-white leading-none">${{ ventas_30dias|floatformat:2 }}</p>
+      <p class="text-[10px] text-purple-400 mt-2 font-medium">Click para ver reporte</p>
     </div>
   </div>
 </div>
+
+<!-- Modal Reporte Mensual -->
+<div id="modal-reporte-mensual" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
+  <div class="bg-dark-800 rounded-2xl border border-dark-700 p-6 w-full max-w-3xl mx-4 shadow-2xl max-h-[85vh] overflow-hidden flex flex-col">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-3">
+        <div class="bg-purple-500/20 p-3 rounded-xl">
+          <i class="fa-solid fa-chart-pie text-purple-500 text-xl"></i>
+        </div>
+        <div>
+          <h3 class="text-xl font-black text-white">Reporte Mensual</h3>
+          <p class="text-xs text-gray-500">Rendimiento por vendedor</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <input type="month" id="mes-selector" class="bg-dark-900 border border-dark-600 text-white rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none">
+        <button onclick="cerrarModalReporteMensual()" class="text-gray-400 hover:text-white">
+          <i class="fa-solid fa-times text-xl"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Resumen del Mes -->
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="bg-dark-900 rounded-xl p-4 border border-dark-700">
+        <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Total del Mes</p>
+        <p id="total-mes" class="text-2xl font-black text-white">$0.00</p>
+      </div>
+      <div class="bg-dark-900 rounded-xl p-4 border border-dark-700">
+        <p class="text-[10px] text-gray-500 uppercase font-bold mb-1">Número de Ventas</p>
+        <p id="num-ventas" class="text-2xl font-black text-white">0</p>
+      </div>
+    </div>
+    
+    <!-- Tabla de Vendedores -->
+    <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+      <div class="bg-dark-900 rounded-xl border border-dark-700 overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-dark-700">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-bold text-gray-400 uppercase">Vendedor</th>
+              <th class="px-4 py-3 text-center text-xs font-bold text-gray-400 uppercase">Ventas</th>
+              <th class="px-4 py-3 text-right text-xs font-bold text-gray-400 uppercase">Total Generado</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-vendedores" class="divide-y divide-dark-700">
+            <tr>
+              <td colspan="3" class="px-4 py-8 text-center text-gray-500">
+                <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+                <p class="text-sm">Cargando datos...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Botón Descargar PDF -->
+    <div class="mt-4 flex justify-end">
+      <a id="btn-descargar-pdf" href="#" class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold transition-colors">
+        <i class="fa-solid fa-file-pdf"></i>
+        Descargar PDF
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentAño = new Date().getFullYear();
+let currentMes = new Date().getMonth() + 1;
+
+function abrirModalReporteMensual() {
+  document.getElementById('modal-reporte-mensual').classList.remove('hidden');
+  
+  const mesInput = document.getElementById('mes-selector');
+  const año = new Date().getFullYear();
+  const mes = String(new Date().getMonth() + 1).padStart(2, '0');
+  mesInput.value = `${año}-${mes}`;
+  
+  currentAño = año;
+  currentMes = new Date().getMonth() + 1;
+  
+  cargarReporteMensual(año, new Date().getMonth() + 1);
+}
+
+function cerrarModalReporteMensual() {
+  document.getElementById('modal-reporte-mensual').classList.add('hidden');
+}
+
+document.getElementById('modal-reporte-mensual').addEventListener('click', function(e) {
+  if (e.target === this) {
+    cerrarModalReporteMensual();
+  }
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    cerrarModalReporteMensual();
+  }
+});
+
+document.getElementById('mes-selector').addEventListener('change', function(e) {
+  const [año, mes] = e.target.value.split('-').map(Number);
+  currentAño = año;
+  currentMes = mes;
+  cargarReporteMensual(año, mes);
+});
+
+function cargarReporteMensual(año, mes) {
+  const tablaBody = document.getElementById('tabla-vendedores');
+  tablaBody.innerHTML = `
+    <tr>
+      <td colspan="3" class="px-4 py-8 text-center text-gray-500">
+        <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+        <p class="text-sm">Cargando datos...</p>
+      </td>
+    </tr>
+  `;
+  
+  document.getElementById('total-mes').textContent = '$0.00';
+  document.getElementById('num-ventas').textContent = '0';
+  
+  fetch(`/dashboard/api/reporte-mensual/?año=${año}&mes=${mes}`)
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('total-mes').textContent = `$${data.total_mes.toLocaleString('es-EC', {minimumFractionDigits: 2})}`;
+      document.getElementById('num-ventas').textContent = data.num_ventas;
+      
+      const btnPdf = document.getElementById('btn-descargar-pdf');
+      btnPdf.href = `/reporte-mensual/${año}/${mes}/pdf/`;
+      
+      if (data.vendedores.length === 0) {
+        tablaBody.innerHTML = `
+          <tr>
+            <td colspan="3" class="px-4 py-8 text-center text-gray-500">
+              <i class="fa-solid fa-inbox text-2xl mb-2"></i>
+              <p class="text-sm">No hay ventas en este mes</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      tablaBody.innerHTML = data.vendedores.map(v => `
+        <tr class="hover:bg-dark-700/50 transition">
+          <td class="px-4 py-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-user text-purple-400 text-sm"></i>
+              </div>
+              <span class="text-white font-semibold">${v.nombre}</span>
+            </div>
+          </td>
+          <td class="px-4 py-4 text-center">
+            <span class="px-3 py-1.5 bg-dark-700 text-gray-300 rounded-lg text-sm font-bold">${v.num_ventas}</span>
+          </td>
+          <td class="px-4 py-4 text-right">
+            <span class="text-green-400 font-bold">$${v.total_generado.toLocaleString('es-EC', {minimumFractionDigits: 2})}</span>
+          </td>
+        </tr>
+      `).join('');
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      tablaBody.innerHTML = `
+        <tr>
+          <td colspan="3" class="px-4 py-8 text-center text-red-500">
+            <i class="fa-solid fa-exclamation-triangle text-2xl mb-2"></i>
+            <p class="text-sm">Error al cargar los datos</p>
+          </td>
+        </tr>
+      `;
+    });
+}
+</script>
 
 <!-- Script para gráficos -->
 <script>
