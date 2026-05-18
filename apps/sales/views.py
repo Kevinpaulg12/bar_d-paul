@@ -936,7 +936,7 @@ def descargar_pdf_cierre(request, cierre_id):
         for detalle in venta.detalles.all():
             nombre = detalle.producto.nombre
             if detalle.es_promocion:
-                nombre = f"PROMO: {nombre}"
+                nombre = f"*{detalle.producto.nombre[:10]}*"
             
             key = (nombre, float(detalle.precio_unitario))
             if key not in productos_agg:
@@ -1374,29 +1374,34 @@ def api_anular_venta(request, venta_id):
     Acciones:
     - Restaura stock de todos los productos
     - Elimina la venta de forma segura (transacción)
-    - Solo permite anular ventas propias
+    - Solo permite anular ventas propias (vendedor) o cualquier venta (admin)
     """
     try:
+        # Obtener la venta
+        venta_perm = Venta.objects.select_related('vendedor').get(id=venta_id)
+        
+        # Verificar permisos: admin puede anular cualquier venta, vendedor solo las suyas
+        if hasattr(request.user, 'perfil') and request.user.perfil.rol == 'vendedor':
+            if venta_perm.vendedor_id != request.user.id:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'No tienes permiso para anular esta venta. Solo puedes anular tus propias ventas.'
+                }, status=403)
+        
+        # Verificar si hay caja activa (opcional para validación adicional)
         caja_activa = obtener_caja_activa(request.user)
-        if not caja_activa:
-            return JsonResponse({'success': False, 'error': 'No hay caja activa'}, status=400)
-
-        if not _usuario_puede_vender(request.user, caja_activa):
+        if caja_activa and not _usuario_puede_vender(request.user, caja_activa):
             return JsonResponse({
                 'success': False,
-                'error': 'No tienes permisos para anular ventas.'
+                'error': 'No tienes permisos para realizar operaciones de venta.'
             }, status=403)
-
-        venta = Venta.objects.select_for_update().get(
-            id=venta_id,
-            caja=caja_activa
-        )
 
         # Transacción atómica para revertir stock
         with transaction.atomic():
+            venta = Venta.objects.select_for_update().get(id=venta_id)
             # Por cada producto vendido, restaurar stock
-            detalles = venta.detalles.all()
-            
+            detalles = list(venta.detalles.all())
+
             for detalle in detalles:
                 producto = Producto.objects.select_for_update().get(id=detalle.producto_id)
                 producto.stock_actual += detalle.cantidad
@@ -1413,13 +1418,15 @@ def api_anular_venta(request, venta_id):
     except Venta.DoesNotExist:
         return JsonResponse({
             'success': False,
-            'error': 'Venta no encontrada o no tienes permiso para anularla'
+            'error': 'Venta no encontrada'
         }, status=404)
     except Exception as e:
+        import traceback
         print(f"Error en api_anular_venta: {e}")
+        traceback.print_exc()
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': f'Error interno del servidor: {type(e).__name__}: {str(e)}'
         }, status=500)
 
 
