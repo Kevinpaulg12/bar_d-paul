@@ -1379,6 +1379,18 @@ def api_anular_venta(request, venta_id):
     try:
         # Obtener la venta
         venta_perm = Venta.objects.select_related('vendedor').get(id=venta_id)
+        db = getattr(getattr(venta_perm, "_state", None), "db", None) or "default"
+        try:
+            from django.db import connections
+            logger.info(
+                "api_anular_venta start venta_id=%s db=%s autocommit=%s in_atomic=%s",
+                venta_id,
+                db,
+                connections[db].get_autocommit(),
+                connections[db].in_atomic_block,
+            )
+        except Exception:
+            pass
         
         # Verificar permisos: admin puede anular cualquier venta, vendedor solo las suyas
         if hasattr(request.user, 'perfil') and request.user.perfil.rol == 'vendedor':
@@ -1397,18 +1409,29 @@ def api_anular_venta(request, venta_id):
             }, status=403)
 
         # Transacción atómica para revertir stock
-        with transaction.atomic():
-            venta = Venta.objects.select_for_update().get(id=venta_id)
+        with transaction.atomic(using=db):
+            try:
+                from django.db import connections
+                logger.info(
+                    "api_anular_venta atomic venta_id=%s db=%s autocommit=%s in_atomic=%s",
+                    venta_id,
+                    db,
+                    connections[db].get_autocommit(),
+                    connections[db].in_atomic_block,
+                )
+            except Exception:
+                pass
+            venta = Venta.objects.using(db).select_for_update().get(id=venta_id)
             # Por cada producto vendido, restaurar stock
-            detalles = list(venta.detalles.all())
+            detalles = list(venta.detalles.using(db).all())
 
             for detalle in detalles:
-                producto = Producto.objects.select_for_update().get(id=detalle.producto_id)
+                producto = Producto.objects.using(db).select_for_update().get(id=detalle.producto_id)
                 producto.stock_actual += detalle.cantidad
                 producto.save()
 
             # Eliminar la venta
-            venta.delete()
+            venta.delete(using=db)
 
         return JsonResponse({
             'success': True,
