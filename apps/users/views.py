@@ -70,15 +70,23 @@ def perfil_view(request):
             
             if not check_password(current_password, user.password):
                 messages.error(request, 'La contraseña actual es incorrecta.')
-            elif len(new_password) < 8:
-                messages.error(request, 'La nueva contraseña debe tener al menos 8 caracteres.')
             elif new_password != confirm_password:
                 messages.error(request, 'Las contraseñas nuevas no coinciden.')
             else:
-                user.password = make_password(new_password)
-                user.save()
-                messages.success(request, 'Contraseña cambiada exitosamente.')
-                return redirect('users:perfil')
+                from django.contrib.auth.password_validation import validate_password
+                from django.core.exceptions import ValidationError
+                try:
+                    validate_password(new_password, user=user)
+                    user.password = make_password(new_password)
+                    user.save()
+                    # Mantener al usuario logueado después de cambiar la contraseña
+                    from django.contrib.auth import update_session_auth_hash
+                    update_session_auth_hash(request, user)
+                    messages.success(request, 'Contraseña cambiada exitosamente.')
+                    return redirect('users:perfil')
+                except ValidationError as e:
+                    for error in e.messages:
+                        messages.error(request, error)
         
         elif action == 'actualizar_perfil':
             user.first_name = request.POST.get('first_name', '')
@@ -121,17 +129,43 @@ def crear_usuario(request):
     Crea un nuevo usuario con perfil.
     """
     if request.method == 'POST':
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        first_name = request.POST.get('first_name')
-        last_name = request.POST.get('last_name')
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '')
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
         rol = request.POST.get('rol', 'vendedor')
         tipo_vendedor = request.POST.get('tipo_vendedor', 'RESPONSABLE')
         
+        # Validar campos obligatorios
+        if not username or not email or not password:
+            messages.error(request, 'El nombre de usuario, correo electrónico y contraseña son obligatorios.')
+            return render(request, 'users/create_users.html')
+            
+        # Validar choices de rol
+        if rol not in ['admin', 'vendedor']:
+            messages.error(request, 'Rol inválido.')
+            return render(request, 'users/create_users.html')
+            
+        # Validar choices de tipo_vendedor
+        if rol == 'vendedor' and tipo_vendedor not in ['RESPONSABLE', 'APOYO']:
+            messages.error(request, 'Tipo de vendedor inválido.')
+            return render(request, 'users/create_users.html')
+        
         if User.objects.filter(username=username).exists():
             messages.error(request, 'El nombre de usuario ya existe.')
-            return redirect('users:crear_usuario')
+            return render(request, 'users/create_users.html')
+            
+        # Validar contraseña con Django validators
+        from django.contrib.auth.password_validation import validate_password
+        from django.core.exceptions import ValidationError
+        
+        try:
+            validate_password(password, user=None)
+        except ValidationError as e:
+            for error in e.messages:
+                messages.error(request, error)
+            return render(request, 'users/create_users.html')
         
         with transaction.atomic():
             user = User.objects.create_user(
@@ -169,27 +203,34 @@ def toggle_usuario(request, user_id):
                 'error': 'No puedes desactivar tu propia cuenta'
             }, status=400)
         
-        # No permitir desactivar al último admin
-        if user.perfil.rol == 'admin':
-            admin_count = User.objects.filter(perfil__rol='admin', perfil__is_active=True).count()
-            if admin_count <= 1:
+        from apps.users.models import Perfil
+        with transaction.atomic():
+            try:
+                perfil = Perfil.objects.select_for_update().get(usuario=user)
+            except Perfil.DoesNotExist:
                 return JsonResponse({
                     'success': False,
-                    'error': 'No puedes desactivar al último administrador'
-                }, status=400)
-        
-        # Toggle estado
-        user.perfil.is_active = not user.perfil.is_active
-        user.perfil.save()
-        
-        # Si se desactivó, cerrar sesión si está activo
-        if not user.perfil.is_active and user == request.user:
-            auth_logout(request)
+                    'error': 'Perfil de usuario no encontrado'
+                }, status=404)
+            
+            # No permitir desactivar al último admin
+            if perfil.rol == 'admin' and perfil.is_active:
+                # Bloquear todos los administradores activos con select_for_update
+                admins_activos = list(Perfil.objects.select_for_update().filter(rol='admin', is_active=True))
+                if len(admins_activos) <= 1:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'No puedes desactivar al último administrador'
+                    }, status=400)
+            
+            # Toggle estado
+            perfil.is_active = not perfil.is_active
+            perfil.save()
         
         return JsonResponse({
             'success': True,
-            'is_active': user.perfil.is_active,
-            'mensaje': f'Usuario {"activado" if user.perfil.is_active else "desactivado"} correctamente'
+            'is_active': perfil.is_active,
+            'mensaje': f'Usuario {"activado" if perfil.is_active else "desactivado"} correctamente'
         })
         
     except User.DoesNotExist:

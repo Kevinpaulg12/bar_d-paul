@@ -43,3 +43,12 @@ def crear_perfil_usuario(sender, instance, created, **kwargs):
             if instance.perfil.rol != nuevo_rol:
                 instance.perfil.rol = nuevo_rol
                 instance.perfil.save()
+
+
+@receiver(post_save, sender=Perfil)
+def invalidar_cache_perfil(sender, instance, **kwargs):
+    """
+    Invalida la caché de actividad del usuario siempre que su perfil sea guardado o modificado.
+    """
+    from django.core.cache import cache
+    cache.delete(f"user_active_{instance.usuario_id}")

@@ -3,15 +3,8 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
-
-
-def _is_api_request(request):
-    return (
-        request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
-        request.headers.get('Content-Type') == 'application/json' or
-        request.path.startswith('/api/') or
-        request.path.startswith('/sales/api/')
-    )
+from django.core.cache import cache
+from apps.users.utils import is_api_request
 
 
 class ActiveUserRequiredMiddleware:
@@ -25,11 +18,20 @@ class ActiveUserRequiredMiddleware:
 
     def __call__(self, request):
         if request.user.is_authenticated:
-            perfil = getattr(request.user, 'perfil', None)
-            if perfil is not None and not perfil.is_active:
+            cache_key = f"user_active_{request.user.id}"
+            is_active = cache.get(cache_key)
+            
+            if is_active is None:
+                perfil = getattr(request.user, 'perfil', None)
+                is_active = perfil.is_active if perfil is not None else True
+                # Cachear por 5 minutos (300 segundos)
+                cache.set(cache_key, is_active, 300)
+                
+            if not is_active:
                 logout(request)
+                cache.delete(cache_key)
 
-                if _is_api_request(request):
+                if is_api_request(request):
                     return JsonResponse(
                         {
                             'success': False,

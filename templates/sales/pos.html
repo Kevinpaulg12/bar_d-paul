@@ -190,6 +190,7 @@
                     data-codigo="{{ producto.code|lower }}"
                     data-categoria="{{ producto.categoria.nombre|slugify }}"
                     data-demanda="{{ producto.total_vendido }}"
+                    data-stock="{{ producto.stock_actual }}"
                     class="producto-card p-3 border-2 border-dark-700 bg-dark-800 rounded-xl hover:border-brand-500 hover:bg-gradient-to-br hover:from-dark-800 hover:to-brand-900/20 transition-all duration-300 text-left group relative overflow-hidden active:scale-95 {% if not puede_vender %}opacity-50 cursor-not-allowed hover:border-dark-700{% endif %}">
               <div class="flex flex-wrap gap-1 mb-2">
                 <span class="text-[9px] uppercase tracking-wide text-brand-400 font-black px-1.5 py-0.5 bg-brand-500/10 rounded-full border border-brand-500/20 leading-none">

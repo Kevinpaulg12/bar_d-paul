@@ -8,16 +8,7 @@ from django.http import JsonResponse, HttpResponseForbidden
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-
-
-def _is_api_request(request):
-    """Determina si la solicitud es una API (espera respuesta JSON)."""
-    return (
-        request.headers.get('X-Requested-With') == 'XMLHttpRequest' or
-        request.headers.get('Content-Type') == 'application/json' or
-        request.path.startswith('/api/') or
-        request.path.startswith('/sales/api/')
-    )
+from apps.users.utils import is_api_request
 
 
 def rol_requerido(*roles_permitidos):
@@ -52,7 +43,7 @@ def rol_requerido(*roles_permitidos):
             # Verificar si el usuario tiene uno de los roles permitidos
             if rol_usuario not in roles_permitidos:
                 # Si es una API, devolver JSON
-                if _is_api_request(request):
+                if is_api_request(request):
                     return JsonResponse({
                         'success': False,
                         'error': f'Acceso denegado. Se requiere rol: {", ".join(roles_permitidos)}',

@@ -109,7 +109,7 @@ def solicitar_baja_api(request):
             print(f"Error en solicitar_baja_api: {e}")
             return JsonResponse({
                 'success': False,
-                'error': str(e)
+                'error': 'Ocurrió un error interno en el servidor al enviar la solicitud de baja'
             }, status=500)
 
     return JsonResponse({
@@ -250,19 +250,22 @@ def aprobar_baja(request, baja_id):
 
         # Transacción atómica: descuentostock + marca aprobada
         with transaction.atomic():
+            # Obtener y bloquear el producto con select_for_update
+            producto = Producto.objects.select_for_update().get(id=baja.producto_id)
+            
             # Validar stock una última vez (por si cambió)
-            if baja.producto.stock_actual < baja.cantidad:
+            if producto.stock_actual < baja.cantidad:
                 return JsonResponse({
                     'success': False,
-                    'error': f'Stock insuficiente. Solo hay {baja.producto.stock_actual}'
+                    'error': f'Stock insuficiente. Solo hay {producto.stock_actual}'
                 }, status=400)
 
             # Descontar stock
-            baja.producto._stock_motivo = 'BAJA'
-            baja.producto._stock_usuario = request.user
-            baja.producto._stock_referencia = f"baja:{baja.id}"
-            baja.producto.stock_actual -= baja.cantidad
-            baja.producto.save()
+            producto._stock_motivo = 'BAJA'
+            producto._stock_usuario = request.user
+            producto._stock_referencia = f"baja:{baja.id}"
+            producto.stock_actual -= baja.cantidad
+            producto.save()
 
             # Marcar como aprobada
             baja.estado = 'APROBADO'
@@ -272,9 +275,9 @@ def aprobar_baja(request, baja_id):
         return JsonResponse({
             'success': True,
             'mensaje': f'✅ Baja aprobada. Stock actualizado.',
-            'producto': baja.producto.nombre,
+            'producto': producto.nombre,
             'cantidad': baja.cantidad,
-            'stock_nuevo': baja.producto.stock_actual
+            'stock_nuevo': producto.stock_actual
         })
 
     except SolicitudBaja.DoesNotExist:
@@ -286,7 +289,7 @@ def aprobar_baja(request, baja_id):
         print(f"Error en aprobar_baja: {e}")
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'Ocurrió un error interno en el servidor al aprobar la baja'
         }, status=500)
 
 
@@ -354,7 +357,7 @@ def rechazar_baja(request, baja_id):
         print(f"Error en rechazar_baja: {e}")
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'Ocurrió un error interno en el servidor al rechazar la baja'
         }, status=500)
 
 
@@ -454,7 +457,7 @@ def ajustar_stock(request, producto_id: int):
             if stock_nuevo < 0:
                 return HttpResponse("Stock insuficiente", status=400)
 
-            motivo = 'ENTRADA' if delta > 0 else 'AJUSTE'
+            motivo = 'AJUSTE'
             producto._stock_motivo = motivo
             producto._stock_usuario = request.user
             producto._stock_referencia = "inventario_ui"
@@ -475,16 +478,20 @@ def ajustar_stock(request, producto_id: int):
 @require_http_methods(["GET", "POST"])
 def crear_producto(request):
     if request.method == 'POST':
-        from decimal import Decimal
-        from django.core.exceptions import ValidationError
-        
+        from decimal import Decimal, InvalidOperation
         nombre = request.POST.get('nombre', '').strip()
         code = request.POST.get('code', '').strip()
         categoria_id = request.POST.get('categoria')
-        stock_actual = int(request.POST.get('stock_actual', 0) or 0)
-        stock_minimo = int(request.POST.get('stock_minimo', 5) or 5)
-        costo_compra = Decimal(request.POST.get('costo_compra', '0') or 0)
-        precio_venta = Decimal(request.POST.get('precio_venta', '0') or 0)
+        try:
+            stock_actual = int(request.POST.get('stock_actual', 0) or 0)
+            stock_minimo = int(request.POST.get('stock_minimo', 5) or 5)
+            costo_compra = Decimal(request.POST.get('costo_compra', '0') or 0)
+            precio_venta = Decimal(request.POST.get('precio_venta', '0') or 0)
+        except (ValueError, TypeError, InvalidOperation):
+            return render(request, 'products/producto_form.html', {
+                'error': 'Los valores numéricos ingresados no son válidos.',
+                'categorias': Categoria.objects.all(),
+            }, status=400)
         
         if not nombre or not code or not categoria_id:
             return render(request, 'products/producto_form.html', {
@@ -533,15 +540,21 @@ def editar_producto(request, producto_id):
         return redirect('products:inventario')
     
     if request.method == 'POST':
-        from decimal import Decimal
-        
+        from decimal import Decimal, InvalidOperation
         nombre = request.POST.get('nombre', '').strip()
         code = request.POST.get('code', '').strip()
         categoria_id = request.POST.get('categoria')
-        stock_actual = int(request.POST.get('stock_actual', 0) or 0)
-        stock_minimo = int(request.POST.get('stock_minimo', 5) or 5)
-        costo_compra = Decimal(request.POST.get('costo_compra', '0') or 0)
-        precio_venta = Decimal(request.POST.get('precio_venta', '0') or 0)
+        try:
+            stock_actual = int(request.POST.get('stock_actual', 0) or 0)
+            stock_minimo = int(request.POST.get('stock_minimo', 5) or 5)
+            costo_compra = Decimal(request.POST.get('costo_compra', '0') or 0)
+            precio_venta = Decimal(request.POST.get('precio_venta', '0') or 0)
+        except (ValueError, TypeError, InvalidOperation):
+            return render(request, 'products/producto_form.html', {
+                'producto': producto,
+                'error': 'Los valores numéricos ingresados no son válidos.',
+                'categorias': Categoria.objects.all(),
+            }, status=400)
         
         if not nombre or not code or not categoria_id:
             return render(request, 'products/producto_form.html', {
@@ -594,7 +607,7 @@ def eliminar_producto(request, producto_id):
     except Producto.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Producto no encontrado'}, status=404)
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+        return JsonResponse({'success': False, 'error': 'Ocurrió un error interno en el servidor al eliminar el producto'}, status=500)
 
 
 # ==================== REPORTES (ADMIN) ====================
@@ -829,21 +842,30 @@ def crear_promocion(request):
     Crea una nueva promoción.
     """
     if request.method == 'POST':
-        from decimal import Decimal
+        from decimal import Decimal, InvalidOperation
         nombre = request.POST.get('nombre')
         descripcion = request.POST.get('descripcion')
         producto_id = request.POST.get('producto')
         tipo_descuento = request.POST.get('tipo_descuento')
-        valor_descuento = Decimal(str(request.POST.get('valor_descuento')))
         fecha_inicio = request.POST.get('fecha_inicio')
         fecha_fin = request.POST.get('fecha_fin')
         
-        producto = Producto.objects.get(id=producto_id)
-        
-        if tipo_descuento == 'PORCENTAJE':
-            precio_promocional = producto.precio_venta * (Decimal('1') - valor_descuento / Decimal('100'))
-        else:
-            precio_promocional = producto.precio_venta - valor_descuento
+        try:
+            producto = Producto.objects.get(id=producto_id)
+            valor_descuento = Decimal(str(request.POST.get('valor_descuento', '0') or 0))
+            
+            if tipo_descuento == 'PORCENTAJE':
+                precio_promocional = producto.precio_venta * (Decimal('1') - valor_descuento / Decimal('100'))
+            elif tipo_descuento == '2X1':
+                precio_promocional = producto.precio_venta * Decimal('0.5')
+            else:  # FIJO
+                precio_promocional = producto.precio_venta - valor_descuento
+                
+        except (ValueError, TypeError, InvalidOperation, Producto.DoesNotExist):
+            return render(request, 'products/promociones/create_pro.html', {
+                'error': 'Producto no válido o valor de descuento incorrecto.',
+                'productos': Producto.objects.all(),
+            }, status=400)
         
         promocion = Promocion.objects.create(
             nombre=nombre,
@@ -892,26 +914,42 @@ def editar_promocion(request, promocion_id):
         return redirect('products:listar_promociones')
     
     if request.method == 'POST':
-        from decimal import Decimal
+        from decimal import Decimal, InvalidOperation
         
-        promocion.nombre = request.POST.get('nombre')
-        promocion.descripcion = request.POST.get('descripcion', '')
-        promocion.producto_id = request.POST.get('producto')
-        promocion.tipo_descuento = request.POST.get('tipo_descuento')
-        promocion.valor_descuento = Decimal(str(request.POST.get('valor_descuento')))
-        promocion.fecha_inicio = request.POST.get('fecha_inicio')
-        promocion.fecha_fin = request.POST.get('fecha_fin')
+        nombre = request.POST.get('nombre')
+        descripcion = request.POST.get('descripcion', '')
+        producto_id = request.POST.get('producto')
+        tipo_descuento = request.POST.get('tipo_descuento')
+        fecha_inicio = request.POST.get('fecha_inicio')
+        fecha_fin = request.POST.get('fecha_fin')
         
-        producto = Producto.objects.get(id=promocion.producto_id)
-        
-        if promocion.tipo_descuento == 'PORCENTAJE':
-            promocion.precio_promocional = producto.precio_venta * (Decimal('1') - promocion.valor_descuento / Decimal('100'))
-        elif promocion.tipo_descuento == 'FIJO':
-            promocion.precio_promocional = producto.precio_venta - promocion.valor_descuento
-        elif promocion.tipo_descuento == '2X1':
-            promocion.precio_promocional = producto.precio_venta
-        
-        promocion.save()
+        try:
+            producto = Producto.objects.get(id=producto_id)
+            valor_descuento = Decimal(str(request.POST.get('valor_descuento', '0') or 0))
+            
+            if tipo_descuento == 'PORCENTAJE':
+                precio_promocional = producto.precio_venta * (Decimal('1') - valor_descuento / Decimal('100'))
+            elif tipo_descuento == '2X1':
+                precio_promocional = producto.precio_venta * Decimal('0.5')
+            else:  # FIJO
+                precio_promocional = producto.precio_venta - valor_descuento
+                
+            promocion.nombre = nombre
+            promocion.descripcion = descripcion
+            promocion.producto = producto
+            promocion.tipo_descuento = tipo_descuento
+            promocion.valor_descuento = valor_descuento
+            promocion.precio_promocional = precio_promocional
+            promocion.fecha_inicio = fecha_inicio
+            promocion.fecha_fin = fecha_fin
+            promocion.save()
+            
+        except (ValueError, TypeError, InvalidOperation, Producto.DoesNotExist):
+            return render(request, 'products/promociones/edit_pro.html', {
+                'promocion': promocion,
+                'productos': Producto.objects.all(),
+                'error': 'Producto no válido o valor de descuento incorrecto.'
+            }, status=400)
         
         messages.success(request, f'Promoción "{promocion.nombre}" actualizada exitosamente.')
         return redirect('products:listar_promociones')

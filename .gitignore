@@ -3,3 +3,10 @@
 *.py[cod]
 *$py.class
 db.sqlite3
+.env
+*.env
+node_modules/
+staticfiles/
+staticfiles/
+node_modules/
+.env
