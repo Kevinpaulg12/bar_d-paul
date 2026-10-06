@@ -28,7 +28,7 @@ class ProductoQuerySet(models.QuerySet):
 class Producto(models.Model):
     nombre = models.CharField(max_length=200)
     code = models.CharField(max_length=50, unique=True)
-    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name='productos')
+    categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, related_name='productos')
     precio_venta = models.DecimalField(max_digits=10, decimal_places=2)
     costo_compra = models.DecimalField(max_digits=10, decimal_places=2)
     stock_actual = models.PositiveIntegerField(default=0)
@@ -50,7 +50,7 @@ class Promocion(models.Model):
     TIPO_DESCUENTO = [
         ('PORCENTAJE', 'Porcentaje'),
         ('FIJO', 'Monto Fijo'),
-        ('2X1', '2x1 (Lleva 2, paga 1'),
+        ('2X1', '2x1 (Lleva 2, paga 1)'),
     ]
     
     nombre = models.CharField(max_length=100)
@@ -79,16 +79,16 @@ class Promocion(models.Model):
     
     def calcular_precio_promocional(self):
         """Calcula el precio promocional basado en el tipo de descuento."""
+        from decimal import Decimal
         if self.tipo_descuento == '2X1':
-            return self.producto.precio_venta
+            return self.producto.precio_venta * Decimal('0.5')
         elif self.tipo_descuento == 'PORCENTAJE':
-            return self.producto.precio_venta * (1 - self.valor_descuento / 100)
+            return self.producto.precio_venta * (Decimal('1') - self.valor_descuento / Decimal('100'))
         else:
             return self.producto.precio_venta - self.valor_descuento
     
     def save(self, *args, **kwargs):
-        if not self.precio_promocional:
-            self.precio_promocional = self.calcular_precio_promocional()
+        self.precio_promocional = self.calcular_precio_promocional()
         super().save(*args, **kwargs)
 
 

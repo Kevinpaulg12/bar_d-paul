@@ -1,8 +1,11 @@
+import logging
 from django.db import transaction
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 
 from .models import Producto, MovimientoStock, Promocion
+
+logger = logging.getLogger(__name__)
 
 
 @receiver(pre_save, sender=Producto)
@@ -46,8 +49,8 @@ def producto_post_save(sender, instance: Producto, created: bool, **kwargs):
                     'stock_actual': instance.stock_actual,
                 }
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error("Error al registrar movimiento de creación de producto en signals: %s", e, exc_info=True)
 
     if instance.stock_actual == prev:
         return
@@ -104,8 +107,8 @@ def producto_post_save(sender, instance: Producto, created: bool, **kwargs):
                     'motivo': motivo,
                 }
             )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error("Error al registrar movimiento de cambio de stock en signals: %s", e, exc_info=True)
 
     for attr in (
         '_stock_prev',
@@ -117,6 +120,17 @@ def producto_post_save(sender, instance: Producto, created: bool, **kwargs):
     ):
         if hasattr(instance, attr):
             delattr(instance, attr)
+
+@receiver(pre_save, sender=Promocion)
+def promocion_pre_save(sender, instance: Promocion, **kwargs):
+    if not instance.pk:
+        instance._activa_prev = None
+        return
+    try:
+        prev = Promocion.objects.only('activa').get(pk=instance.pk)
+        instance._activa_prev = prev.activa
+    except Promocion.DoesNotExist:
+        instance._activa_prev = None
 
 
 @receiver(post_save, sender=Promocion)
@@ -143,8 +157,8 @@ def promocion_post_save(sender, instance: Promocion, created: bool, **kwargs):
                 request=request
             )
         else:
-            old_instance = Promocion.objects.get(pk=instance.pk)
-            if old_instance.activa != instance.activa:
+            activa_prev = getattr(instance, '_activa_prev', None)
+            if activa_prev is not None and activa_prev != instance.activa:
                 accion = 'MODIFICAR'
                 estado = 'activada' if instance.activa else 'desactivada'
                 desc = f"Promoción {estado}: {instance.nombre}"
@@ -158,6 +172,6 @@ def promocion_post_save(sender, instance: Promocion, created: bool, **kwargs):
                     datos_nuevos={'activa': instance.activa},
                     request=request
                 )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error("Error al registrar movimiento de promoción en signals: %s", e, exc_info=True)
 

@@ -1,0 +1,13 @@
+{
+  "name": "bar-dpaul-pos",
+  "version": "1.0.0",
+  "description": "Sistema POS e Inventario con Django y Tailwind CSS",
+  "main": "index.js",
+  "scripts": {
+    "dev:css": "npx tailwindcss -i ./static/css/input.css -o ./static/css/styles.css --watch",
+    "build:css": "npx tailwindcss -i ./static/css/input.css -o ./static/css/styles.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.1"
+  }
+}

@@ -380,7 +380,7 @@ def procesar_venta(request):
                     es_promocion = item.get('es_promocion', False)
                     
                     if es_promocion:
-                        # Es promoción: descontar stock del producto base
+                        # Es promoción: validar stock del producto base
                         from apps.products.models import Promocion
                         try:
                             # Usar valor absoluto del ID de promoción
@@ -393,24 +393,12 @@ def procesar_venta(request):
                                     f"❌ Stock insuficiente para {producto.nombre} (promoción: {promocion.nombre}). "
                                     f"Disponible: {producto.stock_actual}, Solicitado: {cantidad}"
                                 )
-                            
-                            producto._stock_motivo = 'VENTA_PROMO'
-                            producto._stock_usuario = request.user
-                            producto._stock_referencia = f"venta:{venta.id}/promo:{promocion.id}"
-                            producto.stock_actual -= cantidad
-                            producto.save()
-                            
-                            updated_stock.append({
-                                'id': producto.id,
-                                'stock_actual': producto.stock_actual,
-                                'nota': f'Descontado por promoción: {promocion.nombre}'
-                            })
                         except Promocion.DoesNotExist:
                             raise ValueError("Promoción no encontrada")
                         except Producto.DoesNotExist:
                             raise ValueError("Producto de la promoción no encontrado")
                     else:
-                        # Producto normal: validar y descontar stock
+                        # Producto normal: validar stock
                         producto = Producto.objects.select_for_update().get(id=item['id'])
                         if producto.stock_actual < cantidad:
                             raise ValueError(
@@ -428,14 +416,14 @@ def procesar_venta(request):
                         promocion_id=item.get('promocion_id') if es_promocion else None
                     )
 
-                    # El signal descontar_stock se ejecuta automáticamente para productos normales
-                    # Para promociones ya descontamos arriba manualmente
-                    if not es_promocion:
-                        producto.refresh_from_db()
-                        updated_stock.append({
-                            'id': producto.id,
-                            'stock_actual': producto.stock_actual
-                        })
+                    # El signal descontar_stock se ejecuta automáticamente para todos los detalles
+                    # Refrescar desde la base de datos para obtener el stock actualizado
+                    producto.refresh_from_db()
+                    updated_stock.append({
+                        'id': producto.id,
+                        'stock_actual': producto.stock_actual,
+                        'nota': f'Descontado por promoción: {promocion.nombre}' if es_promocion else None
+                    })
 
             # Si todo sale bien, respondemos con éxito
             return JsonResponse({
@@ -936,7 +924,7 @@ def descargar_pdf_cierre(request, cierre_id):
         for detalle in venta.detalles.all():
             nombre = detalle.producto.nombre
             if detalle.es_promocion:
-                nombre = f"PROMO: {nombre}"
+                nombre = f"*{detalle.producto.nombre[:10]}*"
             
             key = (nombre, float(detalle.precio_unitario))
             if key not in productos_agg:
@@ -981,8 +969,8 @@ def descargar_pdf_cierre(request, cierre_id):
     elements.append(productos_table)
     elements.append(Spacer(1, 0.2*inch))
     
-    # SECCIÓN 4: RESUMEN FINANCIERO
-    elements.append(Paragraph("4. RESUMEN FINANCIERO", section_style))
+    # SECCIÓN 4/5: RESUMEN FINANCIERO
+    elements.append(Paragraph(f"{section_num + 1}. RESUMEN FINANCIERO", section_style))
     
     summary_data = [
         ['Concepto', 'Monto'],
@@ -1004,6 +992,38 @@ def descargar_pdf_cierre(request, cierre_id):
         ('GRID', (0, 0), (-1, -1), 1, colors.grey),
     ]))
     elements.append(summary_table)
+    elements.append(Spacer(1, 0.25*inch))
+
+    # SECCIÓN 5/6: INVENTARIO
+    elements.append(Paragraph(f"{section_num + 2}. ESTADO ACTUAL DEL INVENTARIO", section_style))
+    
+    inventario_data = [['Producto', 'Código', 'Categoría', 'Stock Actual', 'Stock Mín']]
+    productos_inventario = Producto.objects.all().select_related('categoria').order_by('nombre')
+    
+    for prod in productos_inventario:
+        categoria_nombre = prod.categoria.nombre if prod.categoria else 'N/A'
+        inventario_data.append([
+            prod.nombre[:30],
+            prod.code,
+            categoria_nombre[:20],
+            str(prod.stock_actual),
+            str(prod.stock_minimo)
+        ])
+        
+    inventario_table = Table(inventario_data, colWidths=[2.5*inch, 1.2*inch, 1.8*inch, 1.0*inch, 1.0*inch])
+    inventario_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0f766e')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (0, 1), (0, -1), 'LEFT'),
+        ('ALIGN', (2, 1), (2, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9f9f9')]),
+    ]))
+    elements.append(inventario_table)
     elements.append(Spacer(1, 0.3*inch))
     
     # Pie de página
@@ -1190,116 +1210,136 @@ def api_dashboard_admin(request):
     
     Retorna JSON con:
     - Ventas diarias (semana actual, lunes a domingo)
-    - Top 5 productos
+    - Top 5 productos (mes actual)
     - Stock bajo alertas
     - Estadísticas por método de pago (mes actual)
-    - Totales: ventas, productos, vendedores (mes actual)
+    - Totales: ventas, productos, vendedores (últimos 30 días)
     
     Solo accesible por administradores.
     """
-    ahora = timezone.now()
-    
-    # Semana actual (lunes a domingo según ISO)
-    inicio_semana = ahora.date() - timedelta(days=ahora.weekday())
-    fin_semana = inicio_semana + timedelta(days=6)
-    
-    # Mes actual
-    inicio_mes = ahora.date().replace(day=1)
-    if ahora.month == 12:
-        fin_mes = ahora.date().replace(day=1, month=1, year=ahora.year + 1) - timedelta(days=1)
-    else:
-        fin_mes = ahora.date().replace(day=1, month=ahora.month + 1) - timedelta(days=1)
-    
-    # 1. VENTAS: semana actual (lunes a hoy)
-    ventas_por_dia = Venta.objects.filter(
-        hora__date__gte=inicio_semana,
-        hora__date__lte=ahora.date()
-    ).values('hora__date').annotate(
-        total=Sum('total'),
-        cantidad=Count('id')
-    ).order_by('hora__date')
-    
-    ventas_dict = {v['hora__date'].isoformat(): float(v['total'] or 0) for v in ventas_por_dia}
-    labels_ventas = []
-    datos_ventas = []
-    
-    # Solo días desde lunes hasta hoy
-    dia_actual = inicio_semana
-    while dia_actual <= ahora.date():
-        labels_ventas.append(dia_actual.strftime('%Y-%m-%d'))
-        datos_ventas.append(ventas_dict.get(dia_actual.isoformat(), 0))
-        dia_actual += timedelta(days=1)
-    
-    # 2. TOP 5 PRODUCTOS (mes actual)
-    top_productos = Producto.objects.annotate(
-        total_vendido=Coalesce(Sum('detalleventa__cantidad'), 0)
-    ).order_by('-total_vendido')[:5]
-    
-    labels_top = [p.nombre for p in top_productos]
-    datos_top = [p.total_vendido for p in top_productos]
-    
-    # 3. STOCK BAJO (menos de 10 unidades)
-    stock_bajo = Producto.objects.filter(stock_actual__lt=10).count()
-    stock_ok = Producto.objects.filter(stock_actual__gte=10).count()
-    total_productos = stock_bajo + stock_ok
-    
-    # 4. MÉTODOS DE PAGO (mes actual)
-    metodos = Venta.objects.filter(
-        hora__date__gte=inicio_mes,
-        hora__date__lte=fin_mes
-    ).values('metodo_pago').annotate(
-        total=Sum('total'),
-        cantidad=Count('id')
-    )
-    
-    labels_metodos = [m['metodo_pago'] for m in metodos]
-    datos_metodos_cantidad = [m['cantidad'] for m in metodos]
-    datos_metodos_monto = [float(m['total'] or 0) for m in metodos]
-    
-    # 5. ESTADÍSTICAS GENERALES (mes actual)
-    total_ventas_mes = Venta.objects.filter(
-        hora__date__gte=inicio_mes,
-        hora__date__lte=fin_mes
-    ).aggregate(total=Coalesce(Sum('total'), 0))['total']
-    total_productos_vendidos = sum(datos_top)
-    num_vendedores = Caja.objects.filter(
-        fecha__gte=inicio_mes
-    ).values('responsable').distinct().count()
-    
-    # 6. BAJAS PENDIENTES
-    bajas_pendientes = SolicitudBaja.objects.filter(estado='PENDIENTE').count()
-    
-    return JsonResponse({
-        'success': True,
-        'ventas_diarias': {
-            'labels': labels_ventas,
-            'datos': datos_ventas
-        },
-        'top_productos': {
-            'labels': labels_top,
-            'datos': datos_top
-        },
-        'stock': {
-            'bajo': stock_bajo,
-            'ok': stock_ok,
-            'total': total_productos,
-            'alertas': stock_bajo  # Número de productos con stock bajo
-        },
-        'metodos_pago': {
-            'labels': labels_metodos,
-            'cantidad': datos_metodos_cantidad,
-            'monto': datos_metodos_monto
-        },
-        'gestiones_pendientes': {
-            'bajas': bajas_pendientes
-        },
-        'totales': {
-            'ventas_30dias': float(total_ventas_30dias),
-            'productos_vendidos': total_productos_vendidos,
-            'vendedores_activos': num_vendedores,
-            'total_ordenes': Venta.objects.filter(hora__gte=hace_30_dias).count()
-        }
-    })
+    try:
+        ahora = timezone.now()
+        
+        # Semana actual (lunes a domingo según ISO)
+        inicio_semana = ahora.date() - timedelta(days=ahora.weekday())
+        
+        # Mes actual
+        inicio_mes = ahora.date().replace(day=1)
+        if ahora.month == 12:
+            fin_mes = ahora.date().replace(day=1, month=1, year=ahora.year + 1) - timedelta(days=1)
+        else:
+            fin_mes = ahora.date().replace(day=1, month=ahora.month + 1) - timedelta(days=1)
+        
+        hace_30_dias = ahora - timedelta(days=30)
+        
+        # 1. VENTAS: semana actual (lunes a hoy)
+        ventas_por_dia = Venta.objects.filter(
+            hora__date__gte=inicio_semana,
+            hora__date__lte=ahora.date()
+        ).values('hora__date').annotate(
+            total=Sum('total'),
+            cantidad=Count('id')
+        ).order_by('hora__date')
+        
+        ventas_dict = {v['hora__date'].isoformat(): float(v['total'] or 0) for v in ventas_por_dia}
+        labels_ventas = []
+        datos_ventas = []
+        
+        # Solo días desde lunes hasta hoy
+        dia_actual = inicio_semana
+        while dia_actual <= ahora.date():
+            labels_ventas.append(dia_actual.strftime('%Y-%m-%d'))
+            datos_ventas.append(ventas_dict.get(dia_actual.isoformat(), 0))
+            dia_actual += timedelta(days=1)
+        
+        # 2. TOP 5 PRODUCTOS (mes actual) - Corregido A-10: filtrado por mes actual
+        top_productos = Producto.objects.annotate(
+            total_vendido=Coalesce(
+                Sum('detalleventa__cantidad', filter=Q(
+                    detalleventa__venta__hora__date__gte=inicio_mes,
+                    detalleventa__venta__hora__date__lte=fin_mes
+                )), 
+                0
+            )
+        ).order_by('-total_vendido')[:5]
+        
+        labels_top = [p.nombre for p in top_productos]
+        datos_top = [float(p.total_vendido) for p in top_productos]
+        
+        # 3. STOCK BAJO (menos de 10 unidades)
+        stock_bajo = Producto.objects.filter(stock_actual__lt=10).count()
+        stock_ok = Producto.objects.filter(stock_actual__gte=10).count()
+        total_productos = stock_bajo + stock_ok
+        
+        # 4. MÉTODOS DE PAGO (mes actual)
+        metodos = Venta.objects.filter(
+            hora__date__gte=inicio_mes,
+            hora__date__lte=fin_mes
+        ).values('metodo_pago').annotate(
+            total=Sum('total'),
+            cantidad=Count('id')
+        )
+        
+        labels_metodos = [m['metodo_pago'] for m in metodos]
+        datos_metodos_cantidad = [m['cantidad'] for m in metodos]
+        datos_metodos_monto = [float(m['total'] or 0) for m in metodos]
+        
+        # 5. ESTADÍSTICAS GENERALES
+        total_ventas_30dias = Venta.objects.filter(
+            hora__gte=hace_30_dias
+        ).aggregate(total=Coalesce(Sum('total'), 0))['total']
+        
+        # Corregido A-11: total_productos_vendidos real de todos los productos en los últimos 30 días, no solo la suma del top 5
+        total_productos_vendidos = float(DetalleVenta.objects.filter(
+            venta__hora__gte=hace_30_dias
+        ).aggregate(total=Coalesce(Sum('cantidad'), 0))['total'])
+        
+        num_vendedores = Caja.objects.filter(
+            fecha__gte=inicio_mes
+        ).values('responsable').distinct().count()
+        
+        # 6. BAJAS PENDIENTES
+        bajas_pendientes = SolicitudBaja.objects.filter(estado='PENDIENTE').count()
+        
+        return JsonResponse({
+            'success': True,
+            'ventas_diarias': {
+                'labels': labels_ventas,
+                'datos': datos_ventas
+            },
+            'top_productos': {
+                'labels': labels_top,
+                'datos': datos_top
+            },
+            'stock': {
+                'bajo': stock_bajo,
+                'ok': stock_ok,
+                'total': total_productos,
+                'alertas': stock_bajo
+            },
+            'metodos_pago': {
+                'labels': labels_metodos,
+                'cantidad': datos_metodos_cantidad,
+                'monto': datos_metodos_monto
+            },
+            'gestiones_pendientes': {
+                'bajas': bajas_pendientes
+            },
+            'totales': {
+                'ventas_30dias': float(total_ventas_30dias),
+                'productos_vendidos': total_productos_vendidos,
+                'vendedores_activos': num_vendedores,
+                'total_ordenes': Venta.objects.filter(hora__gte=hace_30_dias).count()
+            }
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        logger.error(f"Error en api_dashboard_admin: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Ocurrió un error interno en el servidor al obtener las estadísticas'
+        }, status=500)
 
 
 # ==================== APIs PARA GESTIÓN DE VENTAS ====================
@@ -1374,36 +1414,64 @@ def api_anular_venta(request, venta_id):
     Acciones:
     - Restaura stock de todos los productos
     - Elimina la venta de forma segura (transacción)
-    - Solo permite anular ventas propias
+    - Solo permite anular ventas propias (vendedor) o cualquier venta (admin)
     """
     try:
+        # Obtener la venta
+        venta_perm = Venta.objects.select_related('vendedor').get(id=venta_id)
+        db = getattr(getattr(venta_perm, "_state", None), "db", None) or "default"
+        try:
+            from django.db import connections
+            logger.info(
+                "api_anular_venta start venta_id=%s db=%s autocommit=%s in_atomic=%s",
+                venta_id,
+                db,
+                connections[db].get_autocommit(),
+                connections[db].in_atomic_block,
+            )
+        except Exception:
+            pass
+        
+        # Verificar permisos: admin puede anular cualquier venta, vendedor solo las suyas
+        if hasattr(request.user, 'perfil') and request.user.perfil.rol == 'vendedor':
+            if venta_perm.vendedor_id != request.user.id:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'No tienes permiso para anular esta venta. Solo puedes anular tus propias ventas.'
+                }, status=403)
+        
+        # Verificar si hay caja activa (opcional para validación adicional)
         caja_activa = obtener_caja_activa(request.user)
-        if not caja_activa:
-            return JsonResponse({'success': False, 'error': 'No hay caja activa'}, status=400)
-
-        if not _usuario_puede_vender(request.user, caja_activa):
+        if caja_activa and not _usuario_puede_vender(request.user, caja_activa):
             return JsonResponse({
                 'success': False,
-                'error': 'No tienes permisos para anular ventas.'
+                'error': 'No tienes permisos para realizar operaciones de venta.'
             }, status=403)
 
-        venta = Venta.objects.select_for_update().get(
-            id=venta_id,
-            caja=caja_activa
-        )
-
         # Transacción atómica para revertir stock
-        with transaction.atomic():
+        with transaction.atomic(using=db):
+            try:
+                from django.db import connections
+                logger.info(
+                    "api_anular_venta atomic venta_id=%s db=%s autocommit=%s in_atomic=%s",
+                    venta_id,
+                    db,
+                    connections[db].get_autocommit(),
+                    connections[db].in_atomic_block,
+                )
+            except Exception:
+                pass
+            venta = Venta.objects.using(db).select_for_update().get(id=venta_id)
             # Por cada producto vendido, restaurar stock
-            detalles = venta.detalles.all()
-            
+            detalles = list(venta.detalles.using(db).all())
+
             for detalle in detalles:
-                producto = Producto.objects.select_for_update().get(id=detalle.producto_id)
+                producto = Producto.objects.using(db).select_for_update().get(id=detalle.producto_id)
                 producto.stock_actual += detalle.cantidad
                 producto.save()
 
             # Eliminar la venta
-            venta.delete()
+            venta.delete(using=db)
 
         return JsonResponse({
             'success': True,
@@ -1413,13 +1481,15 @@ def api_anular_venta(request, venta_id):
     except Venta.DoesNotExist:
         return JsonResponse({
             'success': False,
-            'error': 'Venta no encontrada o no tienes permiso para anularla'
+            'error': 'Venta no encontrada'
         }, status=404)
     except Exception as e:
+        import traceback
         print(f"Error en api_anular_venta: {e}")
+        traceback.print_exc()
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': f'Error interno del servidor: {type(e).__name__}: {str(e)}'
         }, status=500)
 
 
@@ -1439,8 +1509,8 @@ def mis_reportes(request):
     - cliente: búsqueda por nombre
     - metodo_pago: EFECTIVO o TRANSFERENCIA
     """
-    # Admin ve todas las ventas, vendedor solo las de su caja activa
-    if request.user.perfil.rol == 'admin':
+    rol = getattr(getattr(request.user, 'perfil', None), 'rol', None)
+    if rol == 'admin':
         ventas = Venta.objects.select_related('caja', 'vendedor').prefetch_related('detalles__producto').order_by('-hora')
     else:
         caja_activa = obtener_caja_activa(request.user)
@@ -1707,6 +1777,13 @@ def listar_creditos(request):
     GET /sales/creditos/
     Lista todos los créditos del sistema (admin) o solo del vendedor (vendedor).
     """
+    from django.utils import timezone
+    # Actualizar automáticamente a VENCIDO los créditos expirados que sigan pendientes o parciales
+    Credito.objects.filter(
+        estado__in=['PENDIENTE', 'PARCIAL'],
+        fecha_limite__lt=timezone.now()
+    ).update(estado='VENCIDO')
+
     filtro_estado = request.GET.get('estado', '').strip()
     busqueda = request.GET.get('q', '').strip()
     
@@ -1721,13 +1798,16 @@ def listar_creditos(request):
     if busqueda:
         creditos = creditos.filter(cliente__icontains=busqueda)
     
+    from django.db.models import Sum
+    from decimal import Decimal
     # Estadísticas
     stats = {
         'total': creditos.count(),
         'pendientes': creditos.filter(estado='PENDIENTE').count(),
         'parciales': creditos.filter(estado='PARCIAL').count(),
         'pagados': creditos.filter(estado='PAGADO').count(),
-        'total_pendiente': sum([c.saldo_pendiente for c in creditos.filter(estado__in=['PENDIENTE', 'PARCIAL'])]),
+        'vencidos': creditos.filter(estado='VENCIDO').count(),
+        'total_pendiente': creditos.filter(estado__in=['PENDIENTE', 'PARCIAL', 'VENCIDO']).aggregate(total=Sum('saldo_pendiente'))['total'] or Decimal('0'),
     }
     
     # Paginación
@@ -1877,12 +1957,19 @@ def historial_cierres(request):
     if hasattr(request.user, 'perfil') and request.user.perfil.rol == 'vendedor':
         cierres = cierres.filter(vendedor=request.user)
     
+    from django.db.models import Sum
+    from decimal import Decimal
     # Estadísticas
+    agregados = cierres.aggregate(
+        efectivo=Sum('total_ventas_esperado'),
+        gastos=Sum('total_gastos'),
+        transferencias=Sum('total_transferencias')
+    )
     stats = {
         'total_cierres': cierres.count(),
-        'total_efectivo': sum([c.total_ventas_esperado for c in cierres]),
-        'total_gastos': sum([c.total_gastos or 0 for c in cierres]),
-        'total_transferencias': sum([c.total_transferencias or 0 for c in cierres]),
+        'total_efectivo': agregados['efectivo'] or Decimal('0'),
+        'total_gastos': agregados['gastos'] or Decimal('0'),
+        'total_transferencias': agregados['transferencias'] or Decimal('0'),
     }
     
     # Paginación de 10 en 10
@@ -1929,7 +2016,8 @@ def reporte_mensual_pdf(request, año, mes):
     total_mes = sum(float(v.total) for v in ventas_mes)
     num_ventas = ventas_mes.count()
     
-    nombre_mes = cal_module.month_name[mes]
+    MESES_ESPANOL = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    nombre_mes = MESES_ESPANOL[mes]
     
     vendedores_data = {}
     for venta in ventas_mes:

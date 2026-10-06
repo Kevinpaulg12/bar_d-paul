@@ -26,7 +26,7 @@ def home(request):
         else:
             return redirect('dashboard:dashboard_vendedor')
     except Exception as e:
-        return render(request, 'registration:login.html', {'error': str(e)})
+        return render(request, 'registration/login.html', {'error': 'Ocurrió un error inesperado al procesar la redirección.'})
 
 
 @login_required
@@ -56,24 +56,38 @@ def dashboard_admin(request):
 
     ahora = timezone.now()
     hace_7_dias = ahora - timedelta(days=7)
-    hace_30_dias = ahora - timedelta(days=30)
     hoy = ahora.date()
     
     # ===== VENTAS =====
-    # Últimas 7 días
+    # Últimas 7 días (métrica comparativa de tendencia)
     ventas_7dias = Venta.objects.filter(hora__gte=hace_7_dias).aggregate(
         total=Coalesce(Sum('total'), Decimal(0))
     )['total']
     
-    # Últimos 30 días
-    ventas_30dias = Venta.objects.filter(hora__gte=hace_30_dias).aggregate(
+    # Ventas del Mes Calendario/Natural en curso (reemplaza los últimos 30 días dinámicos)
+    inicio_mes_actual = ahora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    ultimo_dia_mes = calendar.monthrange(ahora.year, ahora.month)[1]
+    fin_mes_actual = ahora.replace(day=ultimo_dia_mes, hour=23, minute=59, second=59, microsecond=999999)
+    
+    ventas_mes_actual = Venta.objects.filter(
+        hora__gte=inicio_mes_actual,
+        hora__lte=fin_mes_actual
+    ).aggregate(
         total=Coalesce(Sum('total'), Decimal(0))
     )['total']
     
-    # Hoy
-    ventas_hoy = Venta.objects.filter(hora__date=hoy).aggregate(
-        total=Coalesce(Sum('total'), Decimal(0))
-    )['total']
+    # Ventas del Turno Activo actual (basado estrictamente en la caja/turno abierto actual)
+    caja_activa = Caja.objects.filter(
+        abierta=True,
+        estado='Abierta',
+    ).order_by('-fecha', '-id').first()
+    
+    if caja_activa:
+        ventas_hoy = caja_activa.ventas.aggregate(
+            total=Coalesce(Sum('total'), Decimal(0))
+        )['total']
+    else:
+        ventas_hoy = Decimal(0)
     
     # ===== STOCK =====
     stock_bajo = Producto.objects.filter(stock_actual__lt=F('stock_minimo')).count()
@@ -97,7 +111,10 @@ def dashboard_admin(request):
     
     # ===== DATOS PARA GRÁFICOS =====
     # Obtener offset para paginación del gráfico (7 días por bloque)
-    offset = int(request.GET.get('offset', 0))
+    try:
+        offset = int(request.GET.get('offset', 0))
+    except (ValueError, TypeError):
+        offset = 0
     
     # Calcular rango de fechas para el bloque actual
     fecha_fin = ahora.date() - timedelta(days=offset)
@@ -142,7 +159,8 @@ def dashboard_admin(request):
         'es_vendedor': False,
         # Totales
         'ventas_7dias': float(ventas_7dias),
-        'ventas_30dias': float(ventas_30dias),
+        'ventas_mes_actual': float(ventas_mes_actual),
+        'ventas_30dias': float(ventas_mes_actual),  # Backward compatibility
         'ventas_hoy': float(ventas_hoy),
         # Stock
         'stock_bajo': stock_bajo,
@@ -188,13 +206,9 @@ def dashboard_vendedor(request):
 
     caja_abierta = bool(caja and caja.abierta and caja.estado == 'Abierta')
 
-    inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
-    fin_dia = ahora.replace(hour=23, minute=59, second=59, microsecond=999999)
-
     if caja_abierta:
         ventas_qs = caja.ventas.filter(
             vendedor=request.user,
-            hora__range=(inicio_dia, fin_dia),
         )
     else:
         ventas_qs = Venta.objects.none()

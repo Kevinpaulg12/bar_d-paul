@@ -193,22 +193,30 @@ function setupBancoUI() {
 // 1. Agregar producto (Ahora recibe el STOCK como cuarto parámetro)
 function agregarProducto(id, nombre, precio, stock) {
   if (!requirePuedeVender()) return;
+  
+  // Buscar el elemento en el DOM para obtener el stock más actualizado de forma robusta
+  const card = document.querySelector(`.producto-card[data-id="${id}"]`);
+  let stockDisponible = parseInt(stock);
+  if (card && card.hasAttribute("data-stock")) {
+    stockDisponible = parseInt(card.getAttribute("data-stock"));
+  }
+
   let productoExistente = carrito.find((item) => item.id === id);
 
   if (productoExistente) {
     // Bloqueo de seguridad: No sumar si ya alcanzó el límite
-    if (productoExistente.cantidad < stock) {
+    if (productoExistente.cantidad < stockDisponible) {
       productoExistente.cantidad += 1;
     } else {
-      alert(`Stock máximo alcanzado. Solo hay ${stock} unidades de ${nombre}.`);
+      alert(`Stock máximo alcanzado. Solo hay ${stockDisponible} unidades de ${nombre}.`);
     }
   } else {
-    if (stock > 0) {
+    if (stockDisponible > 0) {
       carrito.push({
         id: id,
         nombre: nombre,
         precio: parseFloat(precio),
-        stock: parseInt(stock),
+        stock: stockDisponible,
         cantidad: 1,
         es_promocion: false
       });
@@ -317,15 +325,22 @@ function actualizarInterfaz() {
     totalElement.innerText = "$0.00";
     if (totalMini) totalMini.innerText = "$0.00";
     if (countMini) countMini.innerText = "0";
+
+    // Actualizar UI móvil (FAB) si existe
+    const fabCount = document.getElementById('fab-count');
+    const fabTotal = document.getElementById('fab-total');
+    if (fabCount) fabCount.innerText = "0 productos";
+    if (fabTotal) fabTotal.innerText = "$0.00";
     return;
   }
 
+  let htmlContent = "";
   carrito.forEach((item) => {
     let subtotal = item.precio * item.cantidad;
     totalVenta += subtotal;
 
     // Se dibuja cada producto con su control - 1 +
-    contenedor.innerHTML += `
+    htmlContent += `
             <div class="bg-dark-900 p-3 rounded-xl border border-dark-700 mb-2">
                 <div class="flex justify-between items-start mb-2">
                     <span class="font-bold text-sm text-white truncate w-40">${item.nombre}</span>
@@ -346,9 +361,20 @@ function actualizarInterfaz() {
         `;
   });
 
+  contenedor.innerHTML = htmlContent;
   totalElement.innerText = "$" + totalVenta.toFixed(2);
   if (totalMini) totalMini.innerText = "$" + totalVenta.toFixed(2);
   if (countMini) countMini.innerText = String(itemsCount);
+
+  // Actualizar UI móvil (FAB) si existe
+  const fabCount = document.getElementById('fab-count');
+  const fabTotal = document.getElementById('fab-total');
+  if (fabCount) {
+    fabCount.innerText = itemsCount + (itemsCount === 1 ? ' producto' : ' productos');
+  }
+  if (fabTotal) {
+    fabTotal.innerText = '$' + totalVenta.toFixed(2);
+  }
 }
 // static/js/sales.js
 
@@ -723,22 +749,24 @@ async function finalizarVenta() {
         if (prod.stock_actual === 0) {
           card.remove(); // Elimina la tarjeta si el stock es 0
         } else {
-          // Actualiza el texto del stock
+          // Actualizar atributo data-stock
+          card.setAttribute("data-stock", prod.stock_actual);
+
+          // Actualiza el texto del stock con sufijo 'u' (unidades)
           const stockDisplay = card.querySelector(".stock-display");
           if (stockDisplay) {
-            stockDisplay.innerText = prod.stock_actual;
+            stockDisplay.innerText = prod.stock_actual + "u";
           }
 
-          // Actualiza el parámetro de stock en la función onclick
-          // ¡Esto es más complejo de lo que parece! La forma más robusta
-          // es reconstruir el atributo o manejar los datos de otra forma.
-          // Por simplicidad, aquí usamos una expresión regular.
+          // Actualiza el parámetro de stock en la función onclick de forma segura
           let onclickAttr = card.getAttribute("onclick");
-          let newOnclickAttr = onclickAttr.replace(
-            /,\s*\d+\)$/,
-            `, ${prod.stock_actual})`,
-          );
-          card.setAttribute("onclick", newOnclickAttr);
+          if (onclickAttr) {
+            let newOnclickAttr = onclickAttr.replace(
+              /,\s*\d+\)$/,
+              `, ${prod.stock_actual})`,
+            );
+            card.setAttribute("onclick", newOnclickAttr);
+          }
         }
       });
 
@@ -903,7 +931,6 @@ function calcularCambioSheet() {
 
 async function confirmarVentaSheet() {
   if (!requirePuedeVender()) return;
-  const metodoActivo = document.querySelector('.metodo-btn.border-brand-500');
   // Detectar método seleccionado
   const metodo = ['EFECTIVO','TRANSFERENCIA','CREDITO'].find(m => 
     document.getElementById('btn-metodo-' + m)?.classList.contains('border-brand-500')
@@ -938,13 +965,18 @@ async function confirmarVentaSheet() {
   await finalizarVenta();
 }
 
-// Actualizar FAB cuando cambia el carrito
-const _actualizarInterfazOriginal = actualizarInterfaz;
-actualizarInterfaz = function() {
-  _actualizarInterfazOriginal();
-  const count = carrito.reduce((a, i) => a + i.cantidad, 0);
-  const fabCount = document.getElementById('fab-count');
-  const fabTotal = document.getElementById('fab-total');
-  if (fabCount) fabCount.innerText = count + (count === 1 ? ' producto' : ' productos');
-  if (fabTotal) fabTotal.innerText = '$' + totalVenta.toFixed(2);
-};
+// --- CONTROL DE MODALES ---
+
+function abrirModalBaja() {
+  const modal = document.getElementById("modalBaja");
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
+}
+
+function cerrarModalBaja() {
+  const modal = document.getElementById("modalBaja");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+}

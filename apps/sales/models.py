@@ -121,9 +121,13 @@ class CierreCaja(models.Model):
 def descontar_stock(sender, instance, created, **kwargs):
     if created:
         producto = instance.producto
-        producto._stock_motivo = 'VENTA'
+        if instance.es_promocion:
+            producto._stock_motivo = 'VENTA_PROMO'
+            producto._stock_referencia = f"venta:{instance.venta_id}/promo:{instance.promocion_id}"
+        else:
+            producto._stock_motivo = 'VENTA'
+            producto._stock_referencia = f"venta:{instance.venta_id}"
         producto._stock_usuario = getattr(instance.venta, 'vendedor', None)
-        producto._stock_referencia = f"venta:{instance.venta_id}"
         producto.stock_actual -= instance.cantidad
         producto.save()
 
@@ -183,8 +187,12 @@ class Credito(models.Model):
     def actualizar_estado(self):
         if self.saldo_pendiente <= 0:
             self.estado = 'PAGADO'
+        elif self.fecha_limite and self.fecha_limite < timezone.now() and self.saldo_pendiente > 0:
+            self.estado = 'VENCIDO'
         elif self.monto_pagado > 0:
             self.estado = 'PARCIAL'
+        else:
+            self.estado = 'PENDIENTE'
         self.save()
 
 
